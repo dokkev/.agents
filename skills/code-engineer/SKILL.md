@@ -84,7 +84,7 @@ list.
 | units, frames, transforms, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
 | function decomposition, helper boundaries, mutation, outputs, status handling, or Eigen lifetime | `references/control-function-implementation.md` |
 | YAML, `yaml-cpp`, controller gains, FSM parameters, limits, thresholds, or timeouts | `references/yaml-configuration.md` |
-| controller-to-hardware `RobotCommand` handoff, validation, limiting, transmission, or applied-command diagnostics | `references/hardware-command-boundary.md` |
+| controller-to-hardware `RobotCommand` handoff, hardware validation, limiting, transmission, or hardware-owned command smoothing | `references/hardware-command-boundary.md` |
 | `Update()`, `Step()`, high-frequency callbacks, preallocation, fallback, or command publication | `references/control-loop-implementation.md` |
 | linear algebra, geometry, manifolds, optimization, tolerances, normalization, regularization, or Eigen expressions | `references/control-numerical-implementation.md` |
 | threads, ROS callbacks, real-time/non-real-time handoff, shared state, queues, or asynchronous publication | `references/control-concurrency.md` |

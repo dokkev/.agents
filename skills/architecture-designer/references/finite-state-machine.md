@@ -96,11 +96,12 @@ Treat the names and types as illustrative. Preserve the important properties:
 one input snapshot, one complete output, and one explicit outcome.
 
 Define when a requested transition commits. In a control cycle, do not change
-the active mode halfway through planning, control, limiting, or hardware write.
-A common policy is to retain the request produced by the current cycle and
-commit it at the next cycle boundary, after the current output has been handed
-off. Another policy is valid when its atomic boundary and output semantics are
-equally explicit.
+the active mode halfway through planning or control. A common policy is to
+retain the request produced by the current cycle and commit it at the next
+cycle boundary, after the current output has been handed off and before the
+next state's step. The FSM contract does not need to wait for a particular
+hardware write. Another policy is valid when its atomic boundary and output
+semantics are equally explicit.
 
 ## Keep State Logic Thin
 

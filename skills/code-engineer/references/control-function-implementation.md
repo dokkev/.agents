@@ -63,7 +63,7 @@ manifold difference operation when `q` contains a floating base or another
 non-Euclidean joint.
 
 ```cpp
-bool Controller::Update(
+bool Controller::Step(
     const RobotState& state,
     const TaskReference& reference,
     RobotCommand* command)
@@ -94,6 +94,7 @@ Initialize();
 Reset();
 Start();
 Stop();
+Step();
 Update();
 Read();
 Write();
@@ -105,14 +106,16 @@ repeat the class name, narrate the full parameter list, or add `Internal`,
 
 ```cpp
 // Avoid
-controller.ComputeControllerTorqueCommand(state, reference);
+controller.ComputeCommand(state, reference);
 ComputeEndEffectorPoseFromJointPositions(q);
 ProcessData();
 HandleInput();
 ComputeControlInternal();
 
 // Prefer
-controller.ComputeTorque(state, reference);
+robot.setCommand(trajectory_handler.step(state, goal));
+const RobotCommand command =
+    controller.step(state, robot.getCommand());
 ComputeEndEffectorPose(q);
 DecodeState(frame);
 ApplyCommandLimits(command);
@@ -122,15 +125,22 @@ Use verbs consistently:
 
 | Verb | Expected behavior |
 | --- | --- |
-| `Compute` | Calculate a result without changing persistent semantic state |
+| `Step` | Advance one stateful planner, trajectory, controller, or hardware cycle |
+| `Compute` | Optionally calculate a pure mathematical result without changing persistent semantic state |
 | `Build` | Construct a value or problem description from inputs |
-| `Update` | Advance or refresh owned state or a cache |
+| `Update` | Refresh owned state or a cache from new input |
 | `Apply` | Mutate the named target according to a rule |
 | `Set` | Replace an owned property or configuration value |
 | `Validate` | Inspect a contract without modifying the input |
 | `Encode` / `Decode` | Convert between representations |
 | `Read` / `Write` | Interact with a device or stateful interface |
 | `Publish` / `Send` | Produce an external communication side effect |
+
+Do not require a generic `ComputeCommand()` layer merely because a component
+returns a value. A stateful trajectory or planner may return the next desired
+command from `Step()`, and the caller may load it directly with `setCommand()`.
+Use `Compute` only when purity is real and the name clarifies a mathematical
+operation such as a pose, Jacobian, or gravity term.
 
 Name Boolean queries with `Is`, `Has`, `Can`, or `Should` when it improves
 readability. A function name must not imply purity when it changes internal or

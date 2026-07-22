@@ -1,15 +1,17 @@
 # Robot System Architecture
 
-Use this pattern when several consumers need one accepted live robot-state
-snapshot. A repository may call the boundary `RobotSystem`, `StateStore`, or
-something domain-specific, or keep it inside a small runtime when no separate
-class is justified. It is not a master object for the entire application.
+Use this pattern when several control components need one trusted live
+robot-state snapshot and one current controller-facing command. A repository
+may call the boundary `Robot`, `RobotSystem`, or something domain-specific, or
+keep it inside a small runtime when no separate class is justified. It is not a
+master object for the entire application or a hardware manager.
 
 ## Contents
 
 - [Primary Responsibility](#primary-responsibility)
 - [What Trusted State Means](#what-trusted-state-means)
 - [State Ownership and Access](#state-ownership-and-access)
+- [Command Ownership and Access](#command-ownership-and-access)
 - [State Update Flow](#state-update-flow)
 - [Model and State Coherence](#model-and-state-coherence)
 - [Live State Versus Hypothetical State](#live-state-versus-hypothetical-state)
@@ -19,8 +21,9 @@ class is justified. It is not a master object for the entire application.
 
 ## Primary Responsibility
 
-The trusted-state boundary stores and exposes the latest accepted `RobotState`
-in the robot-domain conventions used by controllers, planners, and estimators.
+The robot control boundary stores and exposes the latest accepted `RobotState`
+and the current complete `RobotCommand` in controller-facing domain
+conventions.
 
 The intended direction is:
 
@@ -31,6 +34,11 @@ trusted-state boundary
     -> validate and commit RobotState
 Controller, planner, FSM
     -> immutable state snapshot
+
+Planner, trajectory, or upper control layer
+    -> setCommand(complete RobotCommand)
+Lower controller
+    -> getCommand() and produce the command handed to hardware
 ```
 
 Other components must not independently assemble, own, or mutate competing
@@ -40,11 +48,12 @@ cycle.
 
 The boundary may also own or wrap the robot model and its cache when that keeps
 model queries coherent with the stored state. This does not make it the owner of
-the controller, planner, hardware transport, or application lifecycle.
+the controller, planner, hardware transport, hardware command history, or
+application lifecycle.
 
-Do not introduce a separate state-owning class merely to satisfy this pattern.
-If the existing runtime or estimator already provides the same single-writer,
-validated-snapshot contract without becoming a service locator, preserve the
+Do not introduce a separate robot control class merely to satisfy this pattern.
+If the existing runtime already provides the same trusted-state and complete
+command-handoff contracts without becoming a service locator, preserve the
 simpler boundary.
 
 ## What Trusted State Means
@@ -73,7 +82,7 @@ snapshot.
 When a dedicated class is justified, prefer a small public boundary such as:
 
 ```cpp
-class RobotSystem
+class Robot
 {
 public:
   [[nodiscard]] StateUpdateResult updateState(
@@ -81,9 +90,13 @@ public:
 
   [[nodiscard]] RobotState getState() const;
 
+  void setCommand(const RobotCommand& command);
+  [[nodiscard]] const RobotCommand& getCommand() const;
+
 private:
   RobotModel model_;
   RobotState state_;
+  RobotCommand command_;
 };
 ```
 
@@ -100,6 +113,40 @@ semantics:
 A by-value return, immutable snapshot handle, or bounded real-time buffer view
 may all be valid. Choose from measured copy cost and execution context. Do not
 expose a non-const reference or pointer to internally owned state.
+
+## Command Ownership and Access
+
+The robot control boundary owns one complete controller-facing command. An
+upper control component loads it with `setCommand()`. A lower controller reads
+it with `getCommand()`, applies feedback or other local adjustment to a
+caller-owned copy, and passes the resulting complete command to hardware.
+
+```cpp
+robot.setCommand(trajectory_handler.step(state, goal));
+
+const RobotCommand command =
+    controller.step(state, robot.getCommand());
+const HardwareStatus status = hardware.step(command);
+```
+
+Preserve these semantics:
+
+- `setCommand()` makes one complete controller-facing command visible at once;
+- `getCommand()` returns a value, immutable handle, or const view with a defined
+  lifetime; a const reference commonly remains valid until the next
+  `setCommand()` in the same execution context;
+- callers never mutate internal command storage through a writable reference;
+- the boundary does not limit, transmit, or record the actually transmitted
+  command;
+- no public accepted, limited, or sent command lifecycle is created;
+- hardware remains the final owner of validation, protection, smoothing,
+  conversion, transmission, and transmitted-command history.
+
+The stored command is a control-side handoff point, not measured state and not
+proof of physical application. Observe the result through later state updates.
+Before the first `setCommand()`, `getCommand()` must follow an explicit
+activation precondition or return an unavailable status rather than a
+plausible-looking default command.
 
 ## State Update Flow
 
@@ -130,12 +177,14 @@ if (!update.ok()) {
 }
 
 const RobotState state = robot.getState();
-const Reference reference = planner.computeReference(state, goal);
-const RobotCommand command = controller.computeCommand(state, reference);
+robot.setCommand(planner.step(state, goal));
+const RobotCommand command =
+    controller.step(state, robot.getCommand());
+const HardwareStatus hardware_status = hardware.step(command);
 ```
 
-Do not hide device reads, planning, control, and command transmission inside
-`updateState()` or `getState()`.
+Do not hide device reads, planning, lower-level control, or hardware transmission
+inside `updateState()`, `setCommand()`, or `getCommand()`.
 
 ## Model and State Coherence
 
@@ -182,10 +231,10 @@ must not call `updateState()` merely to evaluate a candidate configuration.
 | Component | Owns | Must not own |
 | --- | --- | --- |
 | hardware adapter | device I/O, decoding, actuator mapping, raw-to-domain conversion | controller policy or authoritative model validation |
-| trusted-state boundary | accepted `RobotState`, robot-state contract, state/model coherence | controller, FSM, planner, device transport, goals, references |
+| robot control boundary | accepted `RobotState`, current controller-facing `RobotCommand`, robot-state contract, state/model coherence | controller, FSM, planner, device transport, hardware limits, transmitted-command history |
 | `RobotModel` | fixed model, kinematics/dynamics operations, required workspaces | hardware communication or system mode |
 | estimator | estimate generation and estimator history | unrestricted mutation of stored robot state |
-| controller | state/reference-to-command policy and controller history | acquisition, state ownership, command transmission |
+| controller | feedback adjustment and controller history | acquisition, state ownership, command transmission |
 | runtime | lifecycle, call order, and failure routing | model math or hidden state mutation |
 
 Do not pass a trusted-state object everywhere as a service locator. A component
@@ -216,9 +265,10 @@ status, or activation precondition.
 
 ## Design Checklist
 
-Before accepting a trusted-state design, verify:
+Before accepting a robot control boundary, verify:
 
-1. Is its primary role to own and expose controller-facing robot state?
+1. Is its primary role to own and expose controller-facing robot state and the
+   current controller-facing command?
 2. Does every live-state write cross one validation and commit boundary?
 3. Do consumers use one coherent snapshot per logical cycle?
 4. Are dimensions, joint order, units, frames, timestamps, and validity defined?
@@ -226,6 +276,8 @@ Before accepting a trusted-state design, verify:
 6. Are state-dependent model results coherent with the snapshot they describe?
 7. Are hypothetical rollout states isolated from live robot state?
 8. Can stale or rejected updates be distinguished from fresh accepted state?
-9. Does `getState()` avoid exposing internally mutable state?
-10. Has the boundary avoided becoming a controller, planner, FSM, hardware
+9. Do `getState()` and `getCommand()` avoid exposing internally mutable state?
+10. Does `setCommand()` replace one complete controller-facing command without
+    inventing hardware command stages?
+11. Has the boundary avoided becoming a controller, planner, FSM, hardware
     manager, or generic dependency container?

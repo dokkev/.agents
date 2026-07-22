@@ -32,7 +32,7 @@ Let each layer fully own its domain and delegate through a narrow,
 intention-level contract.
 
 ```text
-Controller trusts the accepted-state boundary for coherent controller-facing state.
+Control components trust the robot boundary for coherent state and command access.
 ROS 2 hardware interface trusts RobotHardware for hardware orchestration.
 RobotHardware trusts Actuator and LowIO for their local contracts.
 ```
@@ -49,11 +49,11 @@ Assign each runtime responsibility and mutable datum to one owner.
 | Component | Owns |
 | --- | --- |
 | ROS 2 controller wrapper | loaned interfaces, ROS lifecycle, and adaptation to control-domain types |
-| ROS-independent control core | trusted state, FSM, planners, controllers, trajectories, and control-cycle policy |
-| trusted-state boundary | latest accepted, coherent `RobotState` used by the control core when a separate owner is needed |
+| ROS-independent control core | robot control boundary, FSM, planners, controllers, trajectories, and control-cycle policy |
+| robot control boundary | latest accepted `RobotState` and current controller-facing `RobotCommand` |
 | ROS 2 hardware interface | ROS-facing state, sensor, and command storage plus the robot hardware adapter |
 | `RobotHardware` | hardware-subsystem orchestration, `LowIO`, actuators, mapping, watchdog, and local fault handling |
-| `Actuator` | actuator state, actuator-specific conversion and limits, and transmitted-command bookkeeping |
+| `Actuator` | actuator state and actuator-specific conversion and limits |
 | `LowIO` | transport and protocol details |
 
 An orchestration class is justified when a subsystem necessarily coordinates
@@ -68,7 +68,7 @@ Implement control decisions and hardware behavior as ROS-independent C++.
 ```text
 ROS 2 controller wrapper
     -> ROS-independent control core
-       -> trusted state, FSM, planners, controllers
+       -> robot boundary, FSM, planners, controllers
 
 ROS 2 hardware interface
     -> RobotHardware instance
@@ -83,9 +83,9 @@ It should not depend on ROS messages, loaned interfaces, `rclcpp`,
 The ROS 2 controller wrapper should only:
 
 - claim and read state and sensor interfaces;
-- construct project-owned state and reference inputs;
-- invoke the ROS-independent control core;
-- write the returned command to command interfaces;
+- construct and commit one project-owned state candidate;
+- invoke the upper command producer and lower controller;
+- write the resulting complete command to command interfaces;
 - adapt ROS lifecycle, configuration, time, and status;
 - publish optional diagnostics.
 
@@ -123,13 +123,14 @@ read()
 
 controller update()
   controller wrapper builds one complete RobotState candidate
-  control core validates and commits it at the trusted-state boundary
-  active FSM/controller computes one RobotCommand from one snapshot
-  controller wrapper writes the result to command interfaces
+  control core validates and commits it at the robot boundary
+  upper control layer calls setCommand() with one complete RobotCommand
+  lower controller reads getCommand() and produces the hardware-facing command
+  controller wrapper writes that command to command interfaces
 
 write()
   ROS 2 hardware interface builds a hardware-domain command
-  RobotHardware applies the selected intention-level command
+  RobotHardware step() validates, smooths, limits, converts, and transmits it
   RobotHardware coordinates actuators and LowIO
 ```
 
@@ -177,7 +178,9 @@ if (!update.ok()) {
 }
 
 const RobotState state = robot_system_.getState();
-const RobotCommand command = fsm_handler_.step(state);
+robot_system_.setCommand(fsm_handler_.step(state));
+const RobotCommand command =
+    controller_.step(state, robot_system_.getCommand());
 ```
 
 Controllers, planners, and FSM states must not independently retrieve live
@@ -190,31 +193,36 @@ and that the snapshot remains coherent for the whole logical cycle.
 
 ## Command Flow
 
-Let the active control path return a normal `RobotCommand` and pass it through
-the ROS 2 command interfaces.
+Let the upper control layer load one complete `RobotCommand` into the robot
+control boundary. Let the lower controller read that command, adjust a
+caller-owned copy, and pass the result through the ROS 2 command interfaces.
 
 ```text
-FSM and controller RobotCommand
+Planner, trajectory, or FSM
+    -> robot.setCommand(RobotCommand)
+Lower controller
+    -> robot.getCommand()
+    -> adjusted RobotCommand
     -> ROS 2 controller command interfaces
     -> ROS 2 hardware-interface command storage
     -> hardware-domain command
-    -> RobotHardware intention-level API
+    -> RobotHardware step()
     -> actuators and LowIO
 ```
 
-The trusted-state boundary owns state, not hardware commands. If that boundary
-is named `RobotSystem`, do not add command storage or a `setCommand()` API to it.
+The robot control boundary owns the current controller-facing command, but it
+does not own any hardware-applied command or transmission result. `setCommand()`
+loads the control-side handoff; it does not send anything.
 
-Do not introduce public lifecycle representations such as candidate, accepted,
-finalized, limited, and sent commands. Validation, limiting, and device
-conversion are operations at their owning boundary rather than system-wide
-command states.
+Do not introduce public lifecycle representations such as accepted, limited,
+and sent commands. Hardware validation, rate smoothing, absolute protection,
+device conversion, and transmission remain private operations inside the
+hardware boundary.
 
-An actuator may privately retain the last command it received and the command
-it actually transmitted for diagnostics. This is local bookkeeping, not a
-second control input or an alternative command owner. Observe the robot's
-physical response through later state feedback, not through the transmitted
-command record.
+`RobotHardware` may privately retain the last torque it successfully
+transmitted so the next hardware step can perform torque-command smoothing.
+That history is not a controller input or diagnostic command object. Observe
+the robot's physical response through the next accepted state update.
 
 ## ROS 2 Interface Storage
 
@@ -270,10 +278,9 @@ storage and delegate it:
 ```cpp
 hardware_interface::return_type HandHardwareInterface::write(...)
 {
-  const JointImpedanceCommand command =
-      buildJointImpedanceCommandFromRosStorage();
+  const RobotCommand command = buildRobotCommandFromRosStorage();
 
-  return hardware_.setJointImpedance(command).ok()
+  return hardware_.step(command).ok()
       ? hardware_interface::return_type::OK
       : hardware_interface::return_type::ERROR;
 }
@@ -309,9 +316,7 @@ public:
   Status read();
   const HardwareState& getState() const;
 
-  Status setPosition(const JointPositionCommand& command);
-  Status setEffort(const JointEffortCommand& command);
-  Status setJointImpedance(const JointImpedanceCommand& command);
+  HardwareStatus step(const RobotCommand& command);
   HardwareStatus getStatus() const;
 
 private:
@@ -321,6 +326,7 @@ private:
 
   LowIO low_io_;
   std::vector<Actuator> actuators_;
+  Eigen::VectorXd previous_tau_sent_;
 };
 ```
 
@@ -330,7 +336,9 @@ intent. `RobotHardware` coordinates:
 - communication and actuator update order;
 - hardware lifecycle and activation;
 - joint-to-actuator mapping and command distribution;
+- command validation, absolute protection, and torque-command smoothing;
 - communication health and watchdog behavior;
+- updating `previous_tau_sent_` only after successful transmission;
 - local safe response to hardware faults.
 
 Keep raw transport access, packet construction, mutable actuators, watchdog
@@ -345,27 +353,27 @@ exposing internal control mechanisms.
 ## FSM Cycle Semantics
 
 Let one active state own one cycle's command. When a state requests a normal
-transition, transmit the current state's command before committing that
-transition.
+transition, hand off the current state's complete output before the next state
+may run.
 
 ```text
 controller cycle N
     -> current state step
-    -> publish current state's command interfaces
-hardware write N
-    -> transmit current state's command
-controller cycle N + 1
-    -> finish current state
+    -> hand off current state's complete output
+cycle boundary
+    -> exit current state
+    -> commit requested transition once
     -> enter next state
+controller cycle N + 1
     -> next state step
 ```
 
-In a `ros2_control` runtime, preserve this order by keeping the transition
-pending through `write()` and committing it at the beginning of the next
-controller update. Do not call both the current and next state's `step()` in
-one cycle. This keeps command ownership and state lifecycle deterministic.
-Immediate fault handling is a separate runtime path and must not be disguised
-as a normal transition.
+The commit may occur at the end of controller cycle N after its output handoff,
+or at the beginning of controller cycle N + 1. It does not need to wait for a
+particular hardware `write()` call. The invariant is that cycle N has exactly
+one state output and the next state's `step()` cannot run before the transition
+commits at a defined cycle boundary. Immediate fault handling is a separate
+runtime path and must not be disguised as a normal transition.
 
 ## Failure Ownership
 
@@ -419,12 +427,11 @@ Useful read-only observations include:
 
 - accepted state timestamp, sequence, and freshness;
 - active FSM state and requested transition;
-- hardware communication and watchdog status;
-- last transmitted actuator command;
+- hardware communication, watchdog, protection, and smoothing status;
 - control-cycle duration and deadline misses.
 
-Do not feed diagnostic command records back into a controller or expose mutable
-subsystem internals through a diagnostic API.
+Do not expose hardware-private command history or mutable subsystem internals
+through a diagnostic API.
 
 ## Anti-Patterns
 
@@ -435,7 +442,7 @@ Avoid designs in which:
   safety behavior;
 - ROS-facing `std::vector<double>` storage becomes the hardware core's domain
   model;
-- the trusted-state boundary stores or validates hardware commands;
+- the robot control boundary performs hardware limiting or transmission;
 - several consumers independently retrieve live state in one cycle;
 - `RobotHardware` exposes mutable actuators or transport objects;
 - a caller manually drives another owner's watchdog or retry mechanism;
@@ -455,8 +462,8 @@ Before accepting a runtime design, verify:
 6. Does the ROS 2 hardware interface exclusively own its hardware adapter?
 7. Does `RobotHardware` own and coordinate `LowIO` and its actuators?
 8. Do public hardware APIs express joint intent rather than device mechanism?
-9. Are watchdog, communication, conversion, limiting, and transmitted-command
-   bookkeeping private to their proper hardware owners but observable?
+9. Are watchdog, communication, conversion, limiting, smoothing, and
+   transmitted-command history private to the hardware boundary?
 10. Does command flow avoid public lifecycle objects and bypass paths?
 11. Does one FSM state own each normal control-cycle command?
 12. Can slow or asynchronous work neither block nor partially mutate a cycle?

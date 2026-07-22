@@ -1,32 +1,39 @@
 # Hardware Command Boundary
 
-Use this reference when implementing the handoff from a controller-produced
-`RobotCommand` to hardware validation, limiting, conversion, and transmission.
+Use this reference when implementing the handoff from a controller-facing
+`RobotCommand` to hardware validation, smoothing, limiting, conversion, and
+transmission.
 
 ## Core Ownership
 
-The controller or FSM produces a complete caller-owned command. It does not
-borrow mutable storage from `RobotSystem`, hardware, transport, or a shared
-command buffer.
+An upper control component loads one complete command into the robot control
+boundary. A lower controller reads that command without mutating its storage,
+adjusts a caller-owned copy, and gives the final command to hardware.
 
 ```cpp
-const RobotState state = robot_system.GetState();
-const RobotCommand command = controller.ComputeCommand(state, reference);
-const CommandResult result = hardware.ApplyCommand(command);
+const RobotState state = robot.getState();
+robot.setCommand(trajectory_handler.step(state, goal));
+
+const RobotCommand command =
+    controller.step(state, robot.getCommand());
+const HardwareStatus status = hardware.step(command);
 ```
 
 Preserve these boundaries:
 
-- the trusted-state boundary owns accepted live `RobotState`, not commands;
+- the robot control boundary owns accepted live `RobotState` and the current
+  controller-facing `RobotCommand`;
 - the controller owns its calculation and discrete history;
 - the runtime or middleware adapter owns orchestration and transfer;
 - the hardware boundary owns command validation, absolute protection,
-  device-side conversion, transmission, and local transmitted-command records;
+  torque-command smoothing, device-side conversion, transmission, and the
+  previous successfully transmitted torque command;
 - the transport owns packets and communication mechanics.
 
-Do not add `RobotSystem::GetCommand()`, `SetCommand()`, or `SendCommand()` merely
-to centralize the cycle. Do not expose a mutable reference or pointer to a
-command object shared with another execution context.
+Use `getCommand()` and `setCommand()` only for the control-side handoff. They do
+not validate hardware feasibility, transmit, or report application. Do not add
+a control-side `sendCommand()` or expose a mutable reference or pointer to
+command storage shared with another execution context.
 
 ## Complete Handoff
 
@@ -44,38 +51,56 @@ fields, silently repair `NaN`, or mix the rejected candidate with a preceding
 command. The runtime or explicit hardware safety policy selects hold, fallback,
 disable, or fault behavior.
 
-Use an intention-level operation whose name matches the repository, such as:
+Use an intention-level hardware cycle operation whose name matches the
+repository, such as:
 
 ```cpp
-[[nodiscard]] CommandResult ApplyCommand(const RobotCommand& command);
+[[nodiscard]] HardwareStatus step(const RobotCommand& command);
 ```
 
 The exact class and method names are local choices. The semantic contract is a
 single complete input and an explicit outcome.
 
-## Limiting And Transmission
+## Hardware-Private Smoothing, Limiting, And Transmission
 
-Hardware protection may change a valid controller-produced command before it is
-transmitted. Keep the stages conceptually distinguishable at the owning
-boundary:
+Hardware protection may change a valid controller-facing command before it is
+transmitted. Keep every working command and transmission-history value private
+to the hardware boundary. Do not expose accepted, limited, and sent command
+objects as a public lifecycle.
 
-```text
-controller-produced -> hardware-limited -> transmitted
+For torque-command smoothing, the hardware subsystem owns the previous torque
+that it successfully transmitted:
+
+```cpp
+class RobotHardware
+{
+public:
+  [[nodiscard]] HardwareStatus step(const RobotCommand& command);
+
+private:
+  Eigen::VectorXd previous_tau_sent_;
+  Eigen::VectorXd tau_to_send_;
+};
 ```
 
-Do not turn these stages into globally mutable lifecycle objects. Return or
-publish only the outcome needed by the caller and diagnostics, for example:
+Within `step()`:
 
-- accepted, limited, rejected, or communication-failure status;
-- whether absolute protection changed the command;
-- command sequence associated with the result;
-- last command actually transmitted when fallback, diagnosis, or controller
-  history genuinely depends on it.
+1. validate the complete command;
+2. smooth torque against `previous_tau_sent_`;
+3. apply absolute hardware protection and device conversion;
+4. transmit the complete device command;
+5. update `previous_tau_sent_` only after successful transmission.
 
-An actuator or hardware subsystem may privately retain its last transmitted
-command. It must not present that record as measured robot state or as an
-alternative control input. Physical response remains authoritative through
-later state feedback.
+Initialize this storage during configuration or activation from the explicit
+hardware startup policy. On a failed send, do not advance it as though the plant
+received a new torque command. Keep controller filters and controller-output
+smoothing separate; they own their own histories and must not borrow
+`previous_tau_sent_`.
+
+Return only the status needed for runtime failure policy and diagnostics, such
+as success, rejection, protection activation, communication failure, or device
+fault. Do not return the working torque vector merely to expose an internal
+stage. Physical response remains authoritative through later state feedback.
 
 Do not report a successful send when no device transmission occurred. Keep
 packet encoding, bus retries, watchdog mechanics, and actuator conversion below

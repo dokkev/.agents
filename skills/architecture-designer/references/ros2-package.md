@@ -186,17 +186,14 @@ just to match a conventional repository layout. Each needs a real boundary.
 Prefer this direction:
 
 ```text
-Bringup / application
-    -> Control
-    -> Hardware
-    -> Description
+Bringup / application -> Control
+Bringup / application -> Hardware
+Bringup / application -> Description
 
-Control
-    -> Domain/model or shared interfaces
+Control -> Domain/model or shared interfaces
 
-Hardware
-    -> Shared interfaces
-    -> Vendor SDK
+Hardware -> Shared interfaces
+Hardware -> Vendor SDK
 ```
 
 - Bringup may assemble multiple implementation packages.
