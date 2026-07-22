@@ -18,7 +18,7 @@ def destination_for_template(target: Path, relative: Path) -> Path:
     return target / "docs" / relative
 
 
-def install_harness(target: Path, overwrite: bool, dry_run: bool) -> int:
+def install_harness(target: Path, dry_run: bool) -> int:
     skill_root = Path(__file__).resolve().parents[1]
     template_root = skill_root / "templates"
 
@@ -39,13 +39,12 @@ def install_harness(target: Path, overwrite: bool, dry_run: bool) -> int:
         destination = destination_for_template(target, relative)
         output_relative = destination.relative_to(target)
 
-        if destination.exists() and not overwrite:
+        if destination.exists():
             print(f"skip existing: {output_relative}")
             skipped += 1
             continue
 
-        action = "overwrite" if destination.exists() else "create"
-        print(f"{action}: {output_relative}")
+        print(f"create: {output_relative}")
         copied += 1
 
         if dry_run:
@@ -70,17 +69,12 @@ def main() -> int:
         help="Repository root to receive AGENTS.md and lightweight docs templates.",
     )
     parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Overwrite existing harness files instead of skipping them.",
-    )
-    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print planned changes without writing files.",
     )
     args = parser.parse_args()
-    return install_harness(args.target, args.overwrite, args.dry_run)
+    return install_harness(args.target, args.dry_run)
 
 
 if __name__ == "__main__":

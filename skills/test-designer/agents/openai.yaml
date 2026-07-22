@@ -1,4 +1,0 @@
-interface:
-  display_name: "Test Designer"
-  short_description: "Design focused regression tests"
-  default_prompt: "Use $test-designer to design focused tests for changed behavior, edge cases, regressions, and failure paths."

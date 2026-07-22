@@ -16,8 +16,6 @@ real-time requirements without importing production-scale infrastructure.
 
 1. Read the closest `AGENTS.md` and relevant repository maps:
    - `docs/ARCHITECTURE.md`
-   - `docs/DECISIONS.md`
-   - `docs/PLANS.md`
    - `docs/COMMANDS.md`
 2. Inspect the existing component graph, public types, runtime entry point,
    build targets, and tests before proposing new boundaries.

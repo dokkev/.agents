@@ -1,12 +1,14 @@
 # Control Data Conventions
 
+Loading this reference does not authorize tests or review. Use its Review Rules
+only in an explicitly requested Review mode.
+
 Use this standard for units, coordinate frames, state layout, ordering, signs,
 time, and hardware-to-model conversion in robot control, estimation, planning,
 simulation, and hardware-interface code.
 
-Apply it together with `control-variable-naming.md`,
-`control-function-implementation.md`, `control-loop-implementation.md`, and
-`control-numerical-implementation.md`.
+Select naming, function, loop, or numerical references separately only when the
+requested work actually touches those concerns.
 
 ## Contents
 

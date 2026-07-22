@@ -1,11 +1,14 @@
 # Control Variable Naming
 
+Loading this reference does not authorize tests or review. Use Review Rules only
+in an explicitly requested Review mode.
+
 Use this standard for variables, fields, parameters, and intermediate values in
 robot control, estimation, planning, optimization, simulation, and hardware
 interface code.
 
 For units, frames, ordering, signs, transmission side, and time conventions,
-apply this document together with `control-data-conventions.md`.
+select `control-data-conventions.md` separately when that trigger applies.
 
 ## Contents
 

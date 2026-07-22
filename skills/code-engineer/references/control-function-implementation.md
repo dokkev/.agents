@@ -1,10 +1,12 @@
 # Control Function Implementation
 
+Loading this reference does not authorize tests or review. Use Review Rules only
+in an explicitly requested Review mode.
+
 Use this standard when implementing or reviewing controller, estimator,
 planner, solver, simulation, dynamics, kinematics, and numerical functions.
-For repeated high-frequency paths, apply this document together with
-`control-loop-implementation.md`; its preallocation and runtime-safety rules
-also apply.
+For a repeated high-frequency path, select `control-loop-implementation.md`
+separately when its trigger applies.
 
 ## Contents
 

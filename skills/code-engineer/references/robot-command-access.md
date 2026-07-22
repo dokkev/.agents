@@ -1,5 +1,8 @@
 # RobotCommand Ownership and Access
 
+Loading this reference does not authorize tests or review. Apply testing or
+review guidance only when the user explicitly requests that mode.
+
 Use this standard when implementing or changing stored robot commands and their
 public access API.
 

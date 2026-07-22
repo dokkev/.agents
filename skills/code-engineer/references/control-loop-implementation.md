@@ -1,16 +1,16 @@
 # Control Loop Implementation
 
+Loading this reference does not authorize tests, validation, or review. Use its
+Verification and Review Rules sections only in explicitly requested modes.
+
 Use this standard for repeated control, estimation, planning, simulation, and
 hardware-interface update loops, especially in real-time or high-frequency
 paths.
 
-Apply this document together with `control-function-implementation.md` and
-`control-variable-naming.md`. Use `control-data-conventions.md` for units,
-frames, ordering, and hardware/model conversions, and
-`control-numerical-implementation.md` for numerical acceptance criteria. Use
-`control-concurrency.md` when data crosses execution contexts and
-`control-discrete-time-implementation.md` when the loop retains history or uses
-elapsed time.
+Select other references separately only when their triggers apply: data
+conventions for units or frames, numerical guidance for solver or geometry work,
+concurrency guidance for cross-context data, and discrete-time guidance for
+history or elapsed time.
 
 ## Contents
 

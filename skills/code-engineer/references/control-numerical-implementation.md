@@ -1,13 +1,14 @@
 # Control Numerical Implementation
 
+Loading this reference does not authorize tests, validation, or review. Use its
+Verification and Review Rules sections only in explicitly requested modes.
+
 Use this standard for linear algebra, geometry, optimization, filtering,
 integration, and other numerical work in robot control, estimation, planning,
 simulation, and hardware-interface code.
 
-Apply it together with `control-data-conventions.md`,
-`control-function-implementation.md`, and `control-loop-implementation.md`. For
-stateful integration, differentiation, filtering, limiting, and warm starts,
-also apply `control-discrete-time-implementation.md`.
+Select the data, function, loop, or discrete-time references separately only
+when their triggers apply.
 
 ## Contents
 

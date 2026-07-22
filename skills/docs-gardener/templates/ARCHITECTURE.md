@@ -1,61 +1,59 @@
 # Architecture
 
-## Purpose
+This document records the accepted direction of the codebase. Keep current
+implementation and intended direction distinct when a migration is incomplete.
 
-TODO: Describe what this repository is for in one or two sentences.
+## Scope
 
-This repository is used for:
+Describe what this repository owns and what remains outside its boundary.
 
-* TODO
-* TODO
+## Code direction
 
-## Main components
+State the few durable principles that should guide implementation and review.
+
+- Describe the intended ownership model.
+- Describe the intended dependency direction.
+- Describe important constraints on control flow, hardware access, or middleware.
+
+## Components and ownership
 
 | Path | Role |
 | --- | --- |
-| `src/` | TODO |
-| `include/` | TODO |
-| `config/` | TODO |
-| `scripts/` | TODO |
-| `docs/` | Repository harness and project documentation |
+| Replace with a real path | Describe its responsibility and owned state |
 
-## Data flow
+## Dependency direction
 
-Describe the main runtime or development flow.
+Describe which layers may depend on which other layers. Call out dependencies
+that are intentionally forbidden.
+
+## Runtime or data flow
+
+Describe the main runtime path at the level needed to preserve code direction.
 
 ```text
-TODO input/source
--> TODO processing/control/planning
--> TODO validation/safety/checks
--> TODO output/interface/log/result
+input or state source
+-> owning subsystem
+-> computation or coordination
+-> output boundary
 ```
 
-## Important boundaries
-
-* TODO: Which modules should stay separate?
-* TODO: Which code should not depend on which code?
-* TODO: Which interfaces should remain stable?
-
-## Key interfaces
+## Public boundaries
 
 | Interface | Producer | Consumer | Notes |
 | --- | --- | --- | --- |
-| TODO | TODO | TODO | TODO |
+| Replace with a real interface | | | |
 
-## Safety-critical or high-risk paths
+## Constraints and rationale
 
-The following paths may affect hardware behavior, deployed behavior, data integrity, experiments, or user-visible results:
+Record only rationale needed to preserve a code direction or boundary. Keep it
+beside the rule it explains rather than maintaining a chronological decision log.
 
-* TODO
+## Current deviations
 
-Changes to these paths should include a safe validation path.
-
-## Known limitations
-
-* TODO
+List only known places where current code has not yet reached the accepted
+direction. Remove entries when they are resolved; do not use this section as a
+general backlog.
 
 ## Related documents
 
 * `docs/COMMANDS.md`
-* `docs/DECISIONS.md`
-* `docs/PLANS.md`

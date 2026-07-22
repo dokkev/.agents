@@ -1,4 +1,4 @@
 interface:
   display_name: "Docs Gardener"
-  short_description: "Keep repo knowledge current"
-  default_prompt: "Use $docs-gardener to compare code and docs, find stale repository knowledge, and propose precise documentation updates."
+  short_description: "Maintain the minimal repository harness"
+  default_prompt: "Use $docs-gardener to align AGENTS.md, ARCHITECTURE.md, and COMMANDS.md with the repository."

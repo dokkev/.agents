@@ -1,12 +1,15 @@
 # Control Concurrency
 
+Loading this reference does not authorize tests or review. Use its Verification
+and Review Rules sections only when the user explicitly requests those modes.
+
 Use this standard when control code crosses execution contexts, including ROS 2
 callbacks, hardware I/O threads, real-time loops, background diagnostics, or
 user-requested parallel computation.
 
-Apply it together with `control-loop-implementation.md` and
-`control-discrete-time-implementation.md` when a control cycle owns mutable
-history.
+Also select `control-loop-implementation.md` or
+`control-discrete-time-implementation.md` only when the requested work actually
+touches those concerns.
 
 ## Contents
 
