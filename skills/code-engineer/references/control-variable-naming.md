@@ -9,16 +9,16 @@ interface code.
 For units, frames, ordering, signs, transmission side, and time conventions,
 select `control-data-conventions.md` separately when that trigger applies.
 
-## Contents
+## Section Map
 
-- [Core Principle](#core-principle)
+- [Core Contract](#core-contract)
 - [Standard Quantities](#standard-quantities)
 - [Pipeline Suffixes](#pipeline-suffixes)
 - [Context-Owned Semantics](#context-owned-semantics)
 - [Compound Names](#compound-names)
 - [Naming Length and Context](#naming-length-and-context)
 
-## Core Principle
+## Core Contract
 
 Name a value by its physical quantity and, when needed, its stage in the control
 pipeline. Do not encode information that is already clear from the type,

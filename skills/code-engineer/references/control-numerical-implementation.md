@@ -9,9 +9,9 @@ simulation, and hardware-interface code.
 Select the data, function, loop, or discrete-time references separately only
 when their triggers apply.
 
-## Contents
+## Section Map
 
-- [Core Principle](#core-principle)
+- [Core Contract](#core-contract)
 - [Solve Systems Without Explicit Inverses](#solve-systems-without-explicit-inverses)
 - [Use Meaningful Tolerances](#use-meaningful-tolerances)
 - [Validate Finite Values](#validate-finite-values)
@@ -24,7 +24,7 @@ when their triggers apply.
 - [Check Solver Results](#check-solver-results)
 - [Keep Repeated Numerics Deterministic and Bounded](#keep-repeated-numerics-deterministic-and-bounded)
 
-## Core Principle
+## Core Contract
 
 Make numerical assumptions visible and testable. Choose an algorithm that
 matches the mathematical structure, validate the result that the controller

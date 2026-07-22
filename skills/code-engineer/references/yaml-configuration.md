@@ -6,9 +6,9 @@ limits, thresholds, timeouts, and other runtime settings.
 
 Loading this reference does not authorize tests, validation, or review.
 
-## Contents
+## Section Map
 
-- [Core Boundary](#core-boundary)
+- [Core Contract](#core-contract)
 - [Reuse One Small Parser](#reuse-one-small-parser)
 - [Keep Domain Config Typed](#keep-domain-config-typed)
 - [Split Validation Responsibility](#split-validation-responsibility)
@@ -16,7 +16,7 @@ Loading this reference does not authorize tests, validation, or review.
 - [Runtime And Errors](#runtime-and-errors)
 - [Avoid](#avoid)
 
-## Core Boundary
+## Core Contract
 
 Parse YAML once during initialization, convert it into project-owned typed
 configuration, validate it, and pass the trusted result to the owning subsystem.

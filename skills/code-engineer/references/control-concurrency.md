@@ -10,9 +10,9 @@ Also select `control-loop-implementation.md` or
 `control-discrete-time-implementation.md` only when the requested work actually
 touches those concerns.
 
-## Contents
+## Section Map
 
-- [Core Philosophy](#core-philosophy)
+- [Core Contract](#core-contract)
 - [Keep Concurrency Opt-In](#keep-concurrency-opt-in)
 - [Use Concurrency to Isolate Timing Domains](#use-concurrency-to-isolate-timing-domains)
 - [Prefer Existing Framework Primitives](#prefer-existing-framework-primitives)
@@ -26,7 +26,7 @@ touches those concerns.
 - [Keep the Real-Time Path Bounded](#keep-the-real-time-path-bounded)
 - [Avoid Custom Concurrency Primitives](#avoid-custom-concurrency-primitives)
 
-## Core Philosophy
+## Core Contract
 
 The control loop owns time and controller history. Other execution contexts may
 provide data, but they must not control when or how the loop progresses.

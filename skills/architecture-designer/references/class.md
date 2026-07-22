@@ -3,8 +3,9 @@
 Use these rules to design class responsibilities, ownership, runtime flow, and
 dependency boundaries in robotics and control software.
 
-## Contents
+## Section Map
 
+- [Core Contract](#core-contract)
 - [Make the Control Path Visible](#make-the-control-path-visible)
 - [Give Each Class One Role](#give-each-class-one-role)
 - [Assign Mutable State to One Owner](#assign-mutable-state-to-one-owner)
@@ -16,6 +17,21 @@ dependency boundaries in robotics and control software.
 - [Make Failure and Lifecycle Explicit](#make-failure-and-lifecycle-explicit)
 - [Treat Configuration, Timing, and Conventions as Contracts](#treat-configuration-timing-and-conventions-as-contracts)
 - [Decision Checklist](#decision-checklist)
+
+## Core Contract
+
+- Make one complete control cycle and its failure decisions visible at the
+  orchestration boundary.
+- Give every responsibility and mutable datum one owner; pass stable domain
+  values across boundaries instead of exposing mutable components.
+- Keep control, model, hardware, transport, ROS, and vendor dependencies
+  one-way.
+- Add a class or abstraction only for a demonstrated ownership, substitution,
+  dependency, lifecycle, deployment, or test boundary.
+- Keep interfaces domain-oriented, structure shallow, and hardware mechanics
+  separate from control policy.
+- Treat lifecycle, failure, timing, configuration, units, frames, and command
+  stages as explicit contracts.
 
 ## Make the Control Path Visible
 

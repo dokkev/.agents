@@ -6,9 +6,9 @@ may call the boundary `Robot`, `RobotSystem`, or something domain-specific, or
 keep it inside a small runtime when no separate class is justified. It is not a
 master object for the entire application or a hardware manager.
 
-## Contents
+## Section Map
 
-- [Primary Responsibility](#primary-responsibility)
+- [Core Contract](#core-contract)
 - [What Trusted State Means](#what-trusted-state-means)
 - [State Ownership and Access](#state-ownership-and-access)
 - [Command Ownership and Access](#command-ownership-and-access)
@@ -19,7 +19,7 @@ master object for the entire application or a hardware manager.
 - [Failure and Freshness](#failure-and-freshness)
 - [Design Checklist](#design-checklist)
 
-## Primary Responsibility
+## Core Contract
 
 The robot control boundary stores and exposes the latest accepted `RobotState`
 and the current complete `RobotCommand` in controller-facing domain

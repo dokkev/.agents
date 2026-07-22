@@ -4,7 +4,14 @@ Use this reference when implementing the handoff from a controller-facing
 `RobotCommand` to hardware validation, smoothing, limiting, conversion, and
 transmission.
 
-## Core Ownership
+## Section Map
+
+- [Core Contract](#core-contract)
+- [Complete Handoff](#complete-handoff)
+- [Hardware-Private Smoothing, Limiting, And Transmission](#hardware-private-smoothing-limiting-and-transmission)
+- [Concurrency](#concurrency)
+
+## Core Contract
 
 An upper control component loads one complete command into the robot control
 boundary. A lower controller reads that command without mutating its storage,

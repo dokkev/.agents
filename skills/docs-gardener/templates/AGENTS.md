@@ -10,6 +10,10 @@ Use this file as the repository map. Read detailed sources only when relevant:
 If a document is absent or stale, inspect the repository instead of assuming
 its contents.
 
+For documents over 100 lines, inspect H2 headings and read only relevant
+sections. Read the full document when editing it or resolving cross-section
+contracts.
+
 Task authority:
 
 - Explanation, diagnosis, and review are read-only unless changes are requested.

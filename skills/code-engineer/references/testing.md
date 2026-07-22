@@ -4,16 +4,16 @@ Load this reference only when the user explicitly asks to design or add tests,
 run tests, compile, validate, or perform a smoke check. Do not use it as an
 automatic follow-up to implementation or review.
 
-## Contents
+## Section Map
 
-- [Match The Requested Scope](#match-the-requested-scope)
+- [Core Contract](#core-contract)
 - [Context](#context)
 - [Test Design](#test-design)
 - [Concern Matrix](#concern-matrix)
 - [Validation Selection](#validation-selection)
 - [Reporting](#reporting)
 
-## Match The Requested Scope
+## Core Contract
 
 | Request | Action |
 | --- | --- |

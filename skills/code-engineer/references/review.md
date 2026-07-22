@@ -4,9 +4,9 @@ Load this reference only when the user explicitly asks for a code review,
 inspection, issue search, or assessment. A normal implementation request does
 not trigger a separate review pass.
 
-## Contents
+## Section Map
 
-- [Scope And Authority](#scope-and-authority)
+- [Core Contract](#core-contract)
 - [Review Order](#review-order)
 - [Evidence Standard](#evidence-standard)
 - [Severity](#severity)
@@ -14,7 +14,7 @@ not trigger a separate review pass.
 - [Concern Matrix](#concern-matrix)
 - [Report](#report)
 
-## Scope And Authority
+## Core Contract
 
 - Establish the exact diff, files, subsystem, or behavior under review.
 - Keep the review read-only unless the user also requests fixes.

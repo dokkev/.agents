@@ -11,9 +11,9 @@ conventions for units or frames, numerical guidance for solver or geometry work,
 concurrency guidance for cross-context data, and discrete-time guidance for
 history or elapsed time.
 
-## Contents
+## Section Map
 
-- [Core Principle](#core-principle)
+- [Core Contract](#core-contract)
 - [Initialization Responsibilities](#initialization-responsibilities)
 - [Loop Responsibilities](#loop-responsibilities)
 - [Validate Untrusted Inputs at Boundaries](#validate-untrusted-inputs-at-boundaries)
@@ -25,7 +25,7 @@ history or elapsed time.
 - [Keep Execution Bounded](#keep-execution-bounded)
 - [Handle Failures by Contract](#handle-failures-by-contract)
 
-## Core Principle
+## Core Contract
 
 Validate fixed structure once, preallocate reusable storage, and keep each loop
 iteration focused on state-dependent computation and changing safety

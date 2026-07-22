@@ -5,39 +5,53 @@ description: Design or revise software architecture for robotics, robot control,
 
 # Architecture Designer
 
-Design the smallest architecture that makes ownership, dependency direction,
-control flow, lifecycle, and failure behavior obvious to a research-code reader.
-
-Optimize for a laboratory codebase that collaborators can understand and modify
-quickly. Preserve correctness, hardware safety, numerical validity, and actual
-real-time requirements without importing production-scale infrastructure.
+Design the smallest clear robotics research architecture. Preserve correctness,
+hardware safety, numerical validity, and demonstrated real-time needs without
+importing production-scale infrastructure.
 
 ## Workflow
 
-1. Read the closest `AGENTS.md`. Read repository maps only when relevant:
-   - read `docs/ARCHITECTURE.md` for accepted ownership, dependencies, runtime
-     flow, public boundaries, or migration direction;
-   - read `docs/COMMANDS.md` only when build layout, generated artifacts,
-     deployment, or validation commands affect the design.
-2. Inspect the existing component graph, public types, runtime entry point,
-   build targets, and only the tests that act as relevant executable contracts
-   before proposing new boundaries.
-3. State the architectural problem and constraints. Distinguish current defects
-   from optional improvements.
-4. Trace one complete control cycle and the important failure paths.
-5. Select and read only the references relevant to the task.
-6. Assign each responsibility and mutable state to one owner. Make dependencies
-   and external boundaries one-way.
-7. Prefer the fewest cohesive classes, packages, interfaces, and files that
-   satisfy demonstrated boundaries.
-8. Show the proposed runtime flow, responsibilities, dependencies, lifecycle,
-   failure policy, and migration impact.
-9. Record unresolved choices instead of hiding them behind a generic manager,
-   context object, or speculative abstraction.
+1. Read the closest `AGENTS.md`. Read `docs/ARCHITECTURE.md` only for relevant
+   accepted direction; read `docs/COMMANDS.md` only when build or deployment
+   affects the design.
+2. Inspect the smallest relevant component graph, public types, runtime entry
+   point, build targets, and executable contracts.
+3. State the problem and constraints; separate defects from optional changes.
+4. Load only the reference contracts needed for the decision.
+5. Trace one complete cycle and important failure paths.
+6. Give each responsibility and mutable datum one owner, keep dependencies
+   one-way, and prefer the fewest cohesive boundaries.
+7. Deliver the runtime flow, ownership, dependencies, lifecycle, failure policy,
+   migration impact, and unresolved choices.
 
-Do not silently turn an architecture task into a broad implementation rewrite.
-When implementation is requested, preserve the approved design and use the
-repository's implementation standards.
+Architecture work does not authorize implementation. When both are requested,
+preserve the approved design and local implementation standards.
+
+## Load Context Progressively
+
+Start with zero references. Choose one primary reference for the dominant
+concern. Add another only when the primary contract leaves a real gap; do not
+load overlapping sections from multiple references.
+
+For a reference over 100 lines, use the bundled reader. Resolve both paths from
+this skill directory; commands below are shown from that directory.
+
+```bash
+python3 scripts/read_reference.py references/runtime-dataflow.md --list
+python3 scripts/read_reference.py references/runtime-dataflow.md \
+  --section "Core Contract" --section "Command Flow"
+```
+
+Read `Core Contract` plus one or two matching H2 sections. Read a short file in
+full. Read a full long reference only when:
+
+- editing or reviewing that reference itself;
+- resolving a conflict spanning three or more sections;
+- performing a broad architecture, safety, or consistency audit; or
+- selected sections expose an unresolved dependency on the rest of the file.
+
+Apply the same heading-first rule to long repository documents; they need not
+contain `Core Contract`. Explicit safe repository contracts take precedence.
 
 ## Reference Selection
 
@@ -50,47 +64,22 @@ repository's implementation standards.
 | whether to create, merge, or split a ROS 2 package, target, node, interface package, hardware package, description package, or bringup package | `references/ros2-package.md` |
 | C++ header boundary, include dependency, forward declaration, nested/shared type placement, template definition, or file split | `references/header.md` |
 
-Read multiple references when a decision crosses concerns. Repository-specific
-hardware, timing, frame, unit, and deployment contracts override general
-preferences when they are explicit and safe.
-
-For a reference longer than 100 lines, preview its `Contents` first and read
-only the sections needed for the decision. Read the full file only when the
-task genuinely crosses most of its concerns.
-
 ## Core Rules
 
-- Make the main control path read like a story at the runtime or lifecycle entry
-  point.
-- Centralize orchestration, not intelligence, mutable state, or unrestricted
-  access.
-- Give every class one explainable role and every mutable state one owner.
-- Pass stable domain data such as `RobotState`, `Reference`, and `RobotCommand`
-  across boundaries instead of exposing live mutable components.
-- Keep control, model, hardware, transport, ROS, and vendor dependencies flowing
-  in one direction.
-- Use composition and shallow interfaces. Add abstractions only for a real
-  substitution, dependency, deployment, test, or reuse boundary.
+- Make the main cycle visible at the runtime or lifecycle entry point.
+- Centralize orchestration, not intelligence or unrestricted mutable access.
+- Pass stable domain values across boundaries instead of live components.
+- Keep control, model, hardware, transport, ROS, and vendor dependencies one-way.
+- Add abstractions only for a real ownership, substitution, dependency,
+  deployment, test, or reuse boundary.
 - Make failure, lifecycle, configuration, timing, units, frames, and command
-  stages part of the design contract.
-- Default to single-threaded execution. Add concurrency only for a demonstrated
-  timing or execution-context boundary.
-- Keep implementation-specific accessor names and validation mechanics in
-  implementation standards. Architecture defines ownership and validation
-  boundaries, not a mandatory spelling for every method.
+  stages explicit.
+- Default to single-threaded execution; add concurrency only for a demonstrated
+  execution-context or timing boundary.
+- Define ownership and validation boundaries without forcing one method spelling.
 
 ## Deliverable
 
-Lead with the recommended design. Include only the detail needed to implement
-or decide it:
-
-1. runtime/control flow;
-2. component responsibilities and owned mutable state;
-3. dependency and external boundaries;
-4. lifecycle, failure, and real-time behavior;
-5. package/header changes when relevant;
-6. rejected alternatives and why they do not fit current constraints;
-7. migration steps and open decisions.
-
-Use a diagram only when topology or lifecycle is materially clearer than a
-short table or code sketch. Do not disguise uncertainty with extra layers.
+Lead with the recommendation, then the needed flow, ownership, dependencies,
+lifecycle, failures, migration, rejected alternatives, and open decisions. Show
+package/header changes when relevant. Use a diagram only when materially clearer.

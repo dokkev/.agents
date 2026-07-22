@@ -5,9 +5,9 @@ per-cycle action, exit, transition, and failure semantics must remain coherent.
 Do not introduce an FSM when a local enum and a short explicit branch already
 describe the complete behavior.
 
-## Contents
+## Section Map
 
-- [Preserve Semantics, Not One Class Shape](#preserve-semantics-not-one-class-shape)
+- [Core Contract](#core-contract)
 - [Lifecycle Contract](#lifecycle-contract)
 - [Coordinator Ownership](#coordinator-ownership)
 - [Explicit Outputs And Transitions](#explicit-outputs-and-transitions)
@@ -16,7 +16,7 @@ describe the complete behavior.
 - [Cycle, Failure, And Real-Time Boundaries](#cycle-failure-and-real-time-boundaries)
 - [Design Checklist](#design-checklist)
 
-## Preserve Semantics, Not One Class Shape
+## Core Contract
 
 Follow the repository's established interface, names, and ownership model when
 they express the required lifecycle safely. A base class, `std::variant`, table,
