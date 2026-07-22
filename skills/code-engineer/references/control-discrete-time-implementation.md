@@ -19,7 +19,7 @@ requested work actually touches those concerns.
 - [Implement Integrators Deliberately](#implement-integrators-deliberately)
 - [Prefer Measured Velocity to Numerical Differentiation](#prefer-measured-velocity-to-numerical-differentiation)
 - [Discretize Filters for the Actual Update Contract](#discretize-filters-for-the-actual-update-contract)
-- [Define Command Stages and Rate-Limit History](#define-command-stages-and-rate-limit-history)
+- [Keep Hardware Rate-Limit History Local](#keep-hardware-rate-limit-history-local)
 - [Order Limits Explicitly](#order-limits-explicitly)
 - [Make Mode Transitions Bumpless](#make-mode-transitions-bumpless)
 - [Treat Warm Starts as Controller State](#treat-warm-starts-as-controller-state)
@@ -109,8 +109,9 @@ if (!std::isfinite(dt)
 }
 ```
 
-The response may instead hold the previous sent command, skip one state update,
-or enter a degraded mode, but it must be explicit and safe for the plant.
+The response may instead skip one state update or enter a degraded mode, but it
+must be explicit and safe for the plant. Hardware-owned hold and smoothing
+behavior remains inside the hardware boundary.
 
 Distinguish:
 
@@ -132,7 +133,7 @@ the control thread.
 struct ControllerHistory {
   Eigen::VectorXd integral_error;
   Eigen::VectorXd filtered_velocity;
-  Eigen::VectorXd previous_rate_limited_torque;
+  Eigen::VectorXd previous_controller_output;
   SteadyTimePoint previous_cycle_time;
   bool initialized;
 };
@@ -147,8 +148,6 @@ Define exactly what reset clears:
 - filter state;
 - derivative previous sample;
 - previous controller-produced command stage used by the algorithm;
-- previous hardware-applied outcome only when an explicit feedback or result
-  channel provides it;
 - trajectory phase;
 - contact hysteresis;
 - solver warm start;
@@ -252,54 +251,63 @@ Define filter initialization. Common choices are:
 Choose one deliberately. Reset filter history on discontinuous mode, frame,
 unit, signal-source, or sampling-contract changes.
 
-## Define Command Stages and Rate-Limit History
+## Keep Hardware Rate-Limit History Local
 
-Distinguish the command requested by the controller, the command after limits,
-and the command actually sent or accepted by the hardware interface.
+Separate controller memory from actuator-facing command smoothing.
 
-```cpp
-Eigen::VectorXd tau_requested;
-Eigen::VectorXd tau_limited;
-Eigen::VectorXd tau_sent;
-```
+A controller may retain its own previous output when that history is part of a
+filter, reference shaper, or control algorithm. Name it for that algorithm and
+do not imply that it is the command applied by hardware.
 
-Semantic containers may own these stages without repeating suffixes in every
-field. The distinction must still be visible in the data model.
-
-A rate limiter must state which previous stage it uses. In most actuator-facing
-paths, limit against the previous sent or previously accepted command because
-that represents the plant input history.
+Torque-command smoothing based on the plant input history belongs to the
+hardware boundary. Keep both its working torque and
+`previous_tau_sent_` private:
 
 ```cpp
-LimitTorqueRate(
-    tau_requested,
-    previous_tau_sent_,
-    maximum_torque_rate,
-    dt,
-    &tau_limited);
+HardwareStatus RobotHardware::step(const RobotCommand& command)
+{
+  LimitTorqueRate(
+      command.tau,
+      previous_tau_sent_,
+      maximum_torque_rate_,
+      control_period_s_,
+      &tau_to_send_);
+
+  const Status send_status = transmit(tau_to_send_);
+  if (send_status.ok()) {
+    previous_tau_sent_ = tau_to_send_;
+  }
+  return makeHardwareStatus(send_status);
+}
 ```
 
-Do not call a value `previous_command` if it might mean previous requested,
-limited, published, transmitted, or hardware-accepted command.
+The example shows ownership and ordering. A real implementation must also
+perform complete-command validation, absolute protection, device conversion,
+and its defined fault response. Preallocate all dynamic storage before the
+repeated hardware path.
 
-Update `previous_tau_sent_` only after the send boundary reports the stage
-defined by the contract. If transport acceptance is asynchronous, name the
-local publication stage separately from confirmed hardware application.
+Do not publish `previous_tau_sent_` as controller state, feed it back through
+`Robot::setCommand()`, or create public requested/limited/sent command objects.
+If transmission fails, do not advance the stored value as though the plant
+received the new torque.
 
 ## Order Limits Explicitly
 
 Command constraints do not generally commute. Define and preserve the order in
 which they apply.
 
-A typical pipeline may be:
+A controller-side pipeline may be:
 
 1. compute the requested command;
 2. apply mode-specific constraints;
 3. apply velocity or acceleration constraints;
-4. apply rate or jerk limits relative to the selected command-history stage;
-5. apply absolute actuator limits;
-6. validate finite values;
-7. publish the complete command.
+4. validate finite values;
+5. hand off the complete command.
+
+The hardware boundary then validates its contract, smooths torque relative to
+`previous_tau_sent_`, applies absolute actuator protection, converts units, and
+transmits. Do not duplicate hardware smoothing or absolute protection in the
+controller merely to expose intermediate command stages.
 
 This is not a universal order. The correct order depends on the command type,
 plant, and safety boundary. Keep the chosen order visible in the control-loop
@@ -340,7 +348,8 @@ mean:
 
 - initialize a reference from measured state;
 - initialize a filter from its current input;
-- set previous sent command from the actual last output;
+- initialize controller-output history from the new mode's explicit reference
+  or first valid controller output;
 - clear or preload an integrator for bumpless transfer;
 - invalidate a warm start;
 - reset timing origin.

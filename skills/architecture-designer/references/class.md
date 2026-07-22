@@ -24,32 +24,38 @@ Internal details such as Pinocchio cache updates, solver assembly, ROS message
 conversion, and CAN packing may be hidden, but orchestration must remain visible.
 
 ```cpp
-const RobotState state = robot.GetStateSnapshot();
-const Reference reference = planner.ComputeReference(state, goal);
-const ControllerResult result =
-    controller.ComputeCommand(state, reference);
+const StateUpdateResult state_update =
+    robot.updateState(hardware.readState());
 
-if (!result.ok()) {
-  state_machine.HandleControllerFailure(result.status);
+if (!state_update.ok()) {
+  state_machine.handleStateFailure(state_update.status);
   return;
 }
 
-const CommandStatus command_status =
-    robot.AcceptCommand(result.command);
-const SendStatus send_status = robot.SendAcceptedCommand();
-diagnostics.Record(state, reference, result, command_status, send_status);
+const RobotState state = robot.getState();
+robot.setCommand(planner.step(state, goal));
+const ControllerResult result =
+    controller.step(state, robot.getCommand());
+
+if (!result.ok()) {
+  state_machine.handleControllerFailure(result.status);
+  return;
+}
+
+const HardwareStatus hardware_status = hardware.step(result.command);
+diagnostics.record(state, result, hardware_status);
 ```
 
 The exact API spelling belongs to implementation standards. Architecturally,
-the cycle must expose acquisition, planning, control, validation, transmission,
-and failure decisions.
+the cycle must expose state update, high-level command generation, lower-level
+control, hardware handoff, and failure decisions.
 
 - Avoid several layers of trivial forwarding wrappers.
 - Reach meaningful behavior within roughly two navigation hops when practical.
 - Do not hide orchestration inside a callback, manager, or broad façade.
 - Use one coherent state snapshot for the full cycle.
-- Keep controller-produced commands and hardware-applied outcomes
-  distinguishable at their owning boundary.
+- Keep the controller-facing command separate from hardware-private limiting,
+  smoothing, conversion, and transmission state.
 
 ## Give Each Class One Role
 
@@ -59,9 +65,10 @@ change may have been combined.
 
 | Component | Owns | Must not own |
 | --- | --- | --- |
-| `Controller` | state/reference-to-command policy and controller history | transport, encoder conversion, device lifecycle |
-| `Planner` | goal/state-to-reference planning and planning history | actuator protocol, command transmission |
-| `TrajectoryHandler` | time-parameterized reference progression | FSM transitions, device I/O |
+| `Controller` | state/current-command-to-final-command policy and controller history | transport, encoder conversion, device lifecycle |
+| `Planner` | goal/state-to-command planning and planning history | actuator protocol, command transmission |
+| `TrajectoryHandler` | time-parameterized desired-command progression | FSM transitions, device I/O |
+| `Robot` or robot control boundary | trusted state and the current controller-facing command | device transport, hardware limiting, transmitted-command history |
 | `RobotModel` | kinematics, dynamics, model data, and model cache | command transmission or system mode |
 | `StateMachineState` | mode-specific orchestration and simple transition guards | trajectory math, control math, protocol code |
 | FSM coordinator | active state, transitions, and state lifecycle order | motion planning, dynamics, hardware policy |
@@ -88,7 +95,8 @@ Every mutable value must have one authoritative owner.
 | kinematics/dynamics cache | `RobotModel` |
 | solver workspace and warm start | `Solver` |
 | latest sensor snapshot | hardware/state boundary |
-| limited and transmitted-command diagnostics | command/hardware boundary |
+| current controller-facing command | `Robot` or robot control boundary |
+| rate-limit and transmitted-command history | hardware boundary |
 
 Do not distribute writes through mutable references, raw pointers, global
 objects, service locators, or generic context bags. Cross a boundary with an
@@ -150,8 +158,10 @@ Small projects may keep `RobotHardware` and `ActuatorDriver` in one cohesive
 class or file. Preserve the conceptual boundary even when a file split has no
 value.
 
-If hardware changes a command, make that visible. Preserve the requested value
-and the actual limited or sent value, and return meaningful status.
+Hardware reports meaningful success, limiting, rejection, or fault status, but
+keeps its working command and transmitted-command history private. Do not create
+public accepted, limited, and sent command objects merely to expose internal
+hardware stages.
 
 ## Centralize Orchestration, Not Intelligence
 
@@ -178,14 +188,14 @@ Avoid:
 - constructors or getters that connect devices, create threads, load
   parameters, or perform other surprising side effects.
 
-If a repository uses the name `RobotSystem`, it must choose one role:
+If a repository uses the name `RobotSystem`, it must choose one cohesive role:
 
-1. a narrow accepted-state and coherent-model boundary; or
+1. a narrow controller-facing robot boundary that owns trusted state, coherent
+   model data when needed, and the current `RobotCommand`; or
 2. a runtime orchestrator that wires and orders components.
 
 It must not be both, and it must not absorb `RobotModel`, `RobotHardware`,
-controller, planner, FSM, or command-storage responsibilities behind
-unrestricted getters.
+controller, planner, or FSM responsibilities behind unrestricted getters.
 
 ## Keep the Structure Shallow
 
@@ -294,8 +304,7 @@ Make the following explicit where they cross boundaries:
 - generalized and actuated dimensions;
 - joint order and motor/joint side;
 - timestamp clock and freshness;
-- controller-produced, hardware-limited, or transmitted command stage when the
-  distinction crosses the boundary.
+- the controller-facing command contract and the hardware protection boundary.
 
 Default to single-threaded execution. Add threads only to separate real timing
 domains or existing execution contexts. In real-time cycles, exclude heap
@@ -315,6 +324,6 @@ Before accepting a class or component boundary, verify:
 6. Are normal, failure, activation, and shutdown paths visible?
 7. Is the abstraction justified by a current boundary rather than future reuse?
 8. Can the control cycle be understood without navigating a deep call chain?
-9. Are units, frames, dimensions, timestamps, and command stages defined?
+9. Are units, frames, dimensions, timestamps, and command ownership defined?
 10. Would merging or deleting this class make the architecture clearer without
     combining different reasons to change?

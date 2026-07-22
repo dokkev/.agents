@@ -172,9 +172,8 @@ do not use `.tpp` merely to imitate a `.cpp` split.
   no demonstrated value.
 - Avoid template metaprogramming, CRTP, and policy stacks for ordinary component
   wiring.
-- For the required templated FSM contract, template only the state identifier,
-  snapshot, output, or other actual type variation. Do not template every
-  dependency.
+- When an FSM is templated, template only the state identifier, snapshot,
+  output, or other actual type variation. Do not template every dependency.
 - Use explicit instantiation in a `.cpp` only when the supported type set is
   intentionally closed and the build/API tradeoff is documented.
 

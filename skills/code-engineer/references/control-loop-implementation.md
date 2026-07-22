@@ -102,7 +102,7 @@ manifold difference operation when `q` includes a floating base or another
 non-Euclidean joint.
 
 ```cpp
-void Controller::Update(
+void Controller::Step(
     const RobotState& state,
     const TaskReference& reference,
     RobotCommand* command)
@@ -337,7 +337,7 @@ damped motion, gravity compensation, a bounded position hold, or a request to
 disable. There is no universally safe numeric command.
 
 ```cpp
-UpdateStatus Controller::Update(
+UpdateStatus Controller::Step(
     const RobotState& state,
     const TaskReference& reference,
     RobotCommand* command)

@@ -119,25 +119,29 @@ Synchronization, slot selection, pointer swapping, and buffer lifetime are
 implementation details. Expose a domain-level contract to the control law.
 
 ```cpp
-const RobotState& state = state_source.GetSnapshot();
+const RobotState& state = state_source.getSnapshot();
 
 if (!state.valid || state.age > maximum_state_age) {
-  command_channel.Publish(BuildSafeCommand());
+  command_channel.publish(BuildSafeCommand());
   return UpdateStatus::kStateUnavailable;
 }
 
-const RobotCommand command = controller.ComputeCommand(state, reference);
-command_channel.Publish(command);
+robot.setCommand(command_source.getCommand());
+const RobotCommand command =
+    controller.step(state, robot.getCommand());
+command_channel.publish(command);
 ```
 
 In this example:
 
-- `GetSnapshot()` acquires the latest complete state into stable control-thread
+- `getSnapshot()` acquires the latest complete state into stable control-thread
   storage without allocation or indefinite waiting;
 - the returned `const RobotState&` remains stable for the documented cycle or
   accessor lifetime;
-- the controller produces one caller-owned complete command;
-- `Publish()` transfers an immutable snapshot according to the channel contract;
+- `setCommand()` makes one complete controller-facing command visible;
+- the lower controller produces one caller-owned complete command from a
+  read-only command snapshot;
+- `publish()` transfers an immutable snapshot according to the channel contract;
 - the hardware or transport context cannot observe a partially written command.
 
 Do not expose code like this in the control law:
@@ -257,7 +261,7 @@ The control thread exclusively owns state that changes the next control result,
 including:
 
 - integrator and filter history;
-- previous limited or sent command;
+- previous controller output when the control algorithm uses it;
 - solver warm start;
 - mode-transition state;
 - contact hysteresis;
@@ -265,6 +269,11 @@ including:
 
 External contexts publish requests. The control loop applies them at a cycle
 boundary.
+
+Hardware execution exclusively owns `previous_tau_sent_` and other
+transmitted-command history used for actuator-facing smoothing. Do not mirror
+that history onto the control thread or feed it through a shared command
+channel.
 
 ```cpp
 const ControlRequest& request = request_source.GetRequest();
