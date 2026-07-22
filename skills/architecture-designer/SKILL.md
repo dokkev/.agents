@@ -44,6 +44,7 @@ repository's implementation standards.
 | --- | --- |
 | class responsibility, component ownership, runtime flow, hardware boundary, public domain types, lifecycle, failure, or dependency direction | `references/class.md` |
 | authoritative robot state, controller-facing state access, state validation, state/model coherence, live versus rollout state, or `RobotSystem` responsibility | `references/robot-system.md` |
+| control-cycle ordering, ROS 2 `read-update-write` flow, thin ROS wrappers, `RobotHardware` orchestration, ROS interface storage, command flow, or multi-rate runtime boundaries | `references/runtime-dataflow.md` |
 | states, modes, transitions, state lifecycle, `FSMHandler`, trajectory generation, or motion planning | `references/finite-state-machine.md` |
 | whether to create, merge, or split a ROS 2 package, target, node, interface package, hardware package, description package, or bringup package | `references/ros2-package.md` |
 | C++ header boundary, include dependency, forward declaration, nested/shared type placement, template definition, or file split | `references/header.md` |
