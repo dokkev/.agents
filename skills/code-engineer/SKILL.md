@@ -73,6 +73,7 @@ Prefer explicit safe repository contracts over general preferences.
 | function decomposition, helper boundaries, mutation, outputs, status handling, or Eigen lifetime | `references/control-function-implementation.md` |
 | YAML, `yaml-cpp`, controller gains, FSM parameters, limits, thresholds, or timeouts | `references/yaml-configuration.md` |
 | controller-to-hardware `RobotCommand` handoff, hardware validation, limiting, transmission, or hardware-owned command smoothing | `references/hardware-command-boundary.md` |
+| device or transport I/O, packets, reads/writes, retries, reconnects, or hidden blocking | `references/hardware-io.md` |
 | `Update()`, `Step()`, high-frequency callbacks, preallocation, fallback, or command publication | `references/control-loop-implementation.md` |
 | linear algebra, geometry, manifolds, optimization, tolerances, normalization, regularization, or Eigen expressions | `references/control-numerical-implementation.md` |
 | threads, ROS callbacks, real-time/non-real-time handoff, shared state, queues, or asynchronous publication | `references/control-concurrency.md` |
@@ -86,8 +87,11 @@ Implement the smallest clear owning diff. Prioritize safety and correctness,
 unrelated contracts, visible units/frames/timing/ownership/failures, readability,
 and bounded repeated paths.
 
-- Prefer direct code and established libraries.
-- Add structure only for a real domain operation, boundary, or duplication.
+- Start with the simplest direct implementation satisfying known requirements
+  and safety constraints.
+- Add abstraction, state, concurrency, caching, retries, reconnects, or timeouts
+  only for an explicit requirement or observed problem. Use the smallest
+  mechanism with one owner.
 - Follow local style; keep lifecycle, control flow, mathematics, mutation, and
   side effects visible.
 - Do not broaden a local change into package reorganization, API redesign,
