@@ -83,6 +83,7 @@ class FSMHandler
 public:
   void Initialize();
   StateStep<StateId, Output> Step(const Snapshot& snapshot);
+  void CommitRequestedTransition(const Snapshot& snapshot);
   void Shutdown();
 
 private:
@@ -98,15 +99,26 @@ Initialize each state once
 current.FirstVisit(snapshot)
 
 each cycle:
+    commit the transition requested by the preceding completed cycle
     result = current.Step(snapshot)
     if result requests a transition:
-        current.LastVisit()
-        current = requested state
-        current.FirstVisit(snapshot)
+        retain the request as pending
+    return the current state's output
+
+before the next cycle's Step():
+    current.LastVisit()
+    current = requested state
+    current.FirstVisit(snapshot)
 
 shutdown:
     current.LastVisit()
 ```
+
+The runtime must issue the current state's output before the handler commits its
+pending transition. With `ros2_control`, keep the request pending through the
+hardware `write()` and commit it at the beginning of the next controller
+update. A fault path may cancel or override a pending normal transition. See
+`runtime-dataflow.md` for the cycle boundary and command flow.
 
 The handler coordinates lifecycle only. It does not compute trajectories,
 control laws, dynamics, hardware commands, or motion policy.
@@ -191,10 +203,12 @@ collection of counters and timestamps.
 
 - A state requests a transition in its `Step()` result; it never performs the
   transition itself.
-- `FSMHandler` validates the target, calls `LastVisit()`, switches the active
-  state, and calls `FirstVisit()` exactly once.
-- Apply transitions at a defined cycle boundary. Do not change the active state
-  halfway through controller or hardware work.
+- `FSMHandler` validates and retains the requested target until the runtime has
+  issued the current state's output.
+- At the next defined cycle boundary, `FSMHandler` calls `LastVisit()`, switches
+  the active state, and calls `FirstVisit()` exactly once before the new
+  state's `Step()`.
+- Do not change the active state halfway through controller or hardware work.
 - Define self-transition behavior explicitly. Prefer no lifecycle restart unless
   restart semantics are requested by a distinct result.
 - Reject unknown or unavailable state IDs with an explicit status.
