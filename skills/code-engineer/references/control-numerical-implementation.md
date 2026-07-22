@@ -307,7 +307,8 @@ For every IK, QP, nonlinear optimization, factorization, or estimator solve:
 5. check feasibility, residual, or constraint violation when the library status
    alone is insufficient;
 6. map the result into command space only after acceptance;
-7. invoke the defined fallback when acceptance fails.
+7. report rejection so the owning joint-command controller produces its
+   defined complete fallback.
 
 Do not use an unsuccessful solver's output merely because its buffer contains
 numbers. A best-effort or partially feasible result is allowed only when the

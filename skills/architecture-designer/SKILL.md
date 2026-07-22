@@ -58,7 +58,7 @@ contain `Core Contract`. Explicit safe repository contracts take precedence.
 | Design question | Read |
 | --- | --- |
 | class responsibility, component ownership, public domain types, lifecycle, failure, or dependency direction | `references/class.md` |
-| authoritative robot state, controller-facing state and command access, state validation, state/model coherence, live versus rollout state, or `RobotSystem` responsibility | `references/robot-system.md` |
+| Pinocchio-based `RobotSystem`, authoritative model-based robot state, state/model coherence, live versus rollout state, or optional stored command handoff | `references/robot-system.md` |
 | control-cycle ordering, ROS 2 `read-update-write` flow, thin ROS wrappers, `RobotHardware` orchestration, ROS interface storage, command flow, or multi-rate runtime boundaries | `references/runtime-dataflow.md` |
 | states, modes, transitions, state lifecycle, FSM coordination, trajectory generation, or motion planning | `references/finite-state-machine.md` |
 | whether to create, merge, or split a ROS 2 package, target, node, interface package, hardware package, description package, or bringup package | `references/ros2-package.md` |
