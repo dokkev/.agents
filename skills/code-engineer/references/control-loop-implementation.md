@@ -31,6 +31,10 @@ Validate fixed structure once, preallocate reusable storage, and keep each loop
 iteration focused on state-dependent computation and changing safety
 conditions.
 
+The WBC, OSC, or other controller that produces the joint-level command must
+leave one complete nominal or controller-defined fallback command on every
+recoverable return path and report which path was used.
+
 Do not repeat dimension, model, configuration, or resource checks when the
 lifecycle guarantees that those properties cannot change during operation.
 
@@ -309,8 +313,8 @@ Classify failures by when they can occur and whether operation can continue:
 - **Invalid fixed configuration:** For a wrong gain dimension, missing frame,
   or duplicate joint, refuse initialization with a specific diagnostic.
 - **Recoverable runtime fault:** For stale state, a temporary solver failure,
-  or an invalid sensor sample, write the predefined fallback and return a
-  specific status.
+  or an invalid sensor sample, let the joint-command controller write its
+  predefined complete fallback and return a specific status.
 - **Programming or lifecycle contract violation:** For an internal dimension
   change or update before initialization, assert or enter a controlled fault or
   shutdown according to the deployment policy.
@@ -331,10 +335,11 @@ particular:
 Holding the last valid command is allowed only when it is an explicit, bounded
 fallback with its own watchdog and expiry. It is not a default error response.
 
-Define the safe policy for each controller during design and initialization.
-Depending on the mechanism and hardware safety layer, it may be zero effort,
-damped motion, gravity compensation, a bounded position hold, or a request to
-disable. There is no universally safe numeric command.
+Define the control-level fallback for each joint-command controller during
+design and initialization. Depending on the mechanism and hardware safety
+layer, it may be zero effort, damped motion, gravity compensation, a bounded
+position hold, or a request to disable. There is no universally safe numeric
+command.
 
 ```cpp
 UpdateStatus Controller::Step(
@@ -368,6 +373,11 @@ UpdateStatus Controller::Step(
 The example shows control flow, not permission to allocate or resize dynamic
 vectors in a high-frequency implementation. Use preallocated storage and the
 solver's allocation-free API when required.
+
+The runtime or FSM may observe the returned status and choose the next
+reference, behavior, or mode. It must not overwrite the controller's command
+for the same cycle. Hardware applies its separate local validation, protection,
+watchdog, and device-fault response.
 
 Return or record a specific status that identifies the first owning failure.
 Update compact counters or fault state in the loop and format diagnostics in a

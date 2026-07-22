@@ -113,9 +113,9 @@ HandleInput();
 ComputeControlInternal();
 
 // Prefer
-robot.setCommand(trajectory_handler.step(state, goal));
-const RobotCommand command =
-    controller.step(state, robot.getCommand());
+const TaskReference reference = trajectory_handler.Step(state, goal);
+const ControllerResult result = controller.Step(state, model, reference);
+hardware.Step(result.command);
 ComputeEndEffectorPose(q);
 DecodeState(frame);
 ApplyCommandLimits(command);
@@ -138,9 +138,10 @@ Use verbs consistently:
 
 Do not require a generic `ComputeCommand()` layer merely because a component
 returns a value. A stateful trajectory or planner may return the next desired
-command from `Step()`, and the caller may load it directly with `setCommand()`.
-Use `Compute` only when purity is real and the name clarifies a mathematical
-operation such as a pose, Jacobian, or gravity term.
+reference from `Step()`, and the caller may pass it directly to the controller.
+Use stored command access only when a real handoff requires it. Use `Compute`
+only when purity is real and the name clarifies a mathematical operation such
+as a pose, Jacobian, or gravity term.
 
 Name Boolean queries with `Is`, `Has`, `Can`, or `Should` when it improves
 readability. A function name must not imply purity when it changes internal or

@@ -61,9 +61,9 @@ Omit empty or redundant sections.
  *
  * @param state Accepted state in model order and canonical joint-side SI units.
  * @param[out] tau_cmd Caller-owned joint-side torque storage, in newton-meters.
- * @retval UpdateStatus::kOk `tau_cmd` contains a complete command.
+ * @retval UpdateStatus::kOk `tau_cmd` contains the complete nominal command.
  * @retval UpdateStatus::kInvalidState `state` violates the controller contract;
- *         `tau_cmd` is unchanged.
+ *         `tau_cmd` contains the controller-defined complete fallback command.
  * @pre `tau_cmd.size()` equals the configured actuated-joint dimension.
  */
 UpdateStatus ComputeTorque(

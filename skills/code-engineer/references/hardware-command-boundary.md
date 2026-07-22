@@ -1,88 +1,96 @@
 # Hardware Command Boundary
 
-Use this reference when implementing the handoff from a controller-facing
-`RobotCommand` to hardware validation, smoothing, limiting, conversion, and
-transmission.
+Use this reference for the handoff from a controller-produced complete
+`RobotCommand` to hardware validation, protection, optional smoothing,
+conversion, and transmission.
 
 ## Section Map
 
 - [Core Contract](#core-contract)
 - [Complete Handoff](#complete-handoff)
-- [Hardware-Private Smoothing, Limiting, And Transmission](#hardware-private-smoothing-limiting-and-transmission)
+- [Keep Fallback and Protection Distinct](#keep-fallback-and-protection-distinct)
+- [Add Hardware Smoothing Only When Required](#add-hardware-smoothing-only-when-required)
 - [Concurrency](#concurrency)
 
 ## Core Contract
 
-An upper control component loads one complete command into the robot control
-boundary. A lower controller reads that command without mutating its storage,
-adjusts a caller-owned copy, and gives the final command to hardware.
+Prefer a direct result when one execution context owns the cycle:
 
 ```cpp
-const RobotState state = robot.getState();
-robot.setCommand(trajectory_handler.step(state, goal));
-
-const RobotCommand command =
-    controller.step(state, robot.getCommand());
-const HardwareStatus status = hardware.step(command);
+const ControllerResult result =
+    controller.Step(state, model, reference);
+const HardwareStatus status = hardware.Step(result.command);
 ```
 
 Preserve these boundaries:
 
-- the robot control boundary owns accepted live `RobotState` and the current
-  controller-facing `RobotCommand`;
-- the controller owns its calculation and discrete history;
-- the runtime or middleware adapter owns orchestration and transfer;
-- the hardware boundary owns command validation, absolute protection,
-  torque-command smoothing, device-side conversion, transmission, and the
-  previous successfully transmitted torque command;
+- the joint-command controller owns nominal calculation, control-level
+  fallback, and controller history;
+- the runtime or middleware adapter owns visible orchestration and transfer;
+- the hardware boundary owns complete-command validation, absolute hardware
+  protection, device conversion, transmission, and only the smoothing or
+  transmission history actually required by the plant;
 - the transport owns packets and communication mechanics.
 
-Use `getCommand()` and `setCommand()` only for the control-side handoff. They do
-not validate hardware feasibility, transmit, or report application. Do not add
-a control-side `sendCommand()` or expose a mutable reference or pointer to
-command storage shared with another execution context.
+Stored `setCommand()`/`getCommand()` is optional. Use it only when a real
+control-side handoff or cross-context channel requires persistent complete
+command storage. It does not validate hardware feasibility, transmit a command,
+or prove application to the plant.
 
 ## Complete Handoff
 
-Pass one complete command across the boundary. Validate it before making any
-part visible to hardware:
+Pass one complete command across the boundary. Validate it before any part is
+made visible to hardware:
 
 - expected dimension and actuator ordering;
 - finite values;
 - supported mode and required-field consistency;
 - timestamp, sequence, and freshness when part of the interface;
-- command-domain invariants owned by the boundary.
+- command-domain invariants owned by the hardware boundary.
 
 Reject a structurally invalid command as a whole. Do not partially apply valid
-fields, silently repair `NaN`, or mix the rejected candidate with a preceding
-command. The runtime or explicit hardware safety policy selects hold, fallback,
-disable, or fault behavior.
+fields, silently repair `NaN`, mix the candidate with a preceding command, or
+report success when no transmission occurred.
 
-Use an intention-level hardware cycle operation whose name matches the
-repository, such as:
+Expose one intention-level operation whose local name makes the complete input
+and explicit outcome clear:
 
 ```cpp
-[[nodiscard]] HardwareStatus step(const RobotCommand& command);
+[[nodiscard]] HardwareStatus Step(const RobotCommand& command);
 ```
 
-The exact class and method names are local choices. The semantic contract is a
-single complete input and an explicit outcome.
+Keep the working device command private. Report only useful facts such as
+success, rejection, protection activation, transmission failure, or device
+fault. Physical response remains authoritative through later feedback.
 
-## Hardware-Private Smoothing, Limiting, And Transmission
+## Keep Fallback and Protection Distinct
 
-Hardware protection may change a valid controller-facing command before it is
-transmitted. Keep every working command and transmission-history value private
-to the hardware boundary. Do not expose accepted, limited, and sent command
-objects as a public lifecycle.
+The WBC, OSC, or other controller that produces the joint-level command returns
+one complete nominal or fallback command with status. Its solver must not leak a
+partial or rejected solution.
 
-For torque-command smoothing, the hardware subsystem owns the previous torque
-that it successfully transmitted:
+`RobotHardware` does not choose a task-level hold, damping behavior, or
+recovery mode. It may reject a malformed command and apply the immediate local
+response required by absolute limits, watchdogs, drive faults, or the hardware
+safety contract. The runtime or FSM may observe controller and hardware status
+and choose a later behavior or mode; it does not rewrite the controller command
+for the same cycle.
+
+## Add Hardware Smoothing Only When Required
+
+Do not add torque smoothing or transmitted-command history by default. When an
+explicit plant requirement, safety invariant, credible hazard, or observed
+problem justifies actuator-facing rate limiting, keep its working value and
+history private to the hardware boundary.
+
+For a required torque-rate limiter, the hardware subsystem owns the previous
+torque it successfully transmitted:
 
 ```cpp
 class RobotHardware
 {
 public:
-  [[nodiscard]] HardwareStatus step(const RobotCommand& command);
+  [[nodiscard]] HardwareStatus Step(const RobotCommand& command);
 
 private:
   Eigen::VectorXd previous_tau_sent_;
@@ -90,33 +98,23 @@ private:
 };
 ```
 
-Within `step()`:
+Within `Step()`:
 
 1. validate the complete command;
-2. smooth torque against `previous_tau_sent_`;
+2. apply the required rate limit against `previous_tau_sent_`;
 3. apply absolute hardware protection and device conversion;
 4. transmit the complete device command;
 5. update `previous_tau_sent_` only after successful transmission.
 
-Initialize this storage during configuration or activation from the explicit
-hardware startup policy. On a failed send, do not advance it as though the plant
-received a new torque command. Keep controller filters and controller-output
-smoothing separate; they own their own histories and must not borrow
-`previous_tau_sent_`.
-
-Return only the status needed for runtime failure policy and diagnostics, such
-as success, rejection, protection activation, communication failure, or device
-fault. Do not return the working torque vector merely to expose an internal
-stage. Physical response remains authoritative through later state feedback.
-
-Do not report a successful send when no device transmission occurred. Keep
-packet encoding, bus retries, watchdog mechanics, and actuator conversion below
-the intention-level boundary.
+Initialize history from an explicit activation policy. Do not advance it after
+a failed send. Controller filters or output shaping own different histories and
+must not borrow hardware transmission state. Do not create public requested,
+limited, and sent command objects merely to expose internal stages.
 
 ## Concurrency
 
-When the controller and hardware run in different execution contexts, transfer
-immutable complete snapshots through a channel with explicit latest-value or
-ordered semantics. Keep slot, buffer, lock, and pointer-swap mechanics out of
-the control law. Read `control-concurrency.md` only when the task actually
-crosses execution contexts.
+When controller and hardware execution contexts differ, transfer immutable
+complete snapshots through one channel with explicit latest-value or ordered
+semantics. Keep buffer, slot, lock, and pointer-swap mechanics outside the
+control law. Do not add a queue or stored command when direct synchronous
+handoff already satisfies the runtime contract.

@@ -146,6 +146,8 @@ inside the state.
 - Define self-transition behavior; do not accidentally restart lifecycle hooks.
 - Reject unknown or unavailable states with an explicit status.
 - Route failures to a named hold, fault, disable, or safe-state policy.
+- Let that policy choose the next behavior or reference. The WBC, OSC, or other
+  joint-command controller owns the complete same-cycle fallback command.
 - Prevent transition loops or unbounded repeated transitions in one cycle.
 - Preserve the state identity and snapshot sequence that caused a transition
   when diagnostics need them.

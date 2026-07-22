@@ -121,15 +121,15 @@ implementation details. Expose a domain-level contract to the control law.
 ```cpp
 const RobotState& state = state_source.getSnapshot();
 
+ControllerResult result;
 if (!state.valid || state.age > maximum_state_age) {
-  command_channel.publish(BuildSafeCommand());
-  return UpdateStatus::kStateUnavailable;
+  result = controller.Fallback(UpdateStatus::kStateUnavailable);
+} else {
+  const TaskReference& reference = reference_source.getSnapshot();
+  result = controller.Step(state, model, reference);
 }
 
-robot.setCommand(command_source.getCommand());
-const RobotCommand command =
-    controller.step(state, robot.getCommand());
-command_channel.publish(command);
+command_channel.publish(result.command);
 ```
 
 In this example:
@@ -138,9 +138,8 @@ In this example:
   storage without allocation or indefinite waiting;
 - the returned `const RobotState&` remains stable for the documented cycle or
   accessor lifetime;
-- `setCommand()` makes one complete controller-facing command visible;
-- the lower controller produces one caller-owned complete command from a
-  read-only command snapshot;
+- the joint-command controller produces one complete nominal or fallback
+  command with status;
 - `publish()` transfers an immutable snapshot according to the channel contract;
 - the hardware or transport context cannot observe a partially written command.
 
@@ -270,10 +269,10 @@ including:
 External contexts publish requests. The control loop applies them at a cycle
 boundary.
 
-Hardware execution exclusively owns `previous_tau_sent_` and other
-transmitted-command history used for actuator-facing smoothing. Do not mirror
-that history onto the control thread or feed it through a shared command
-channel.
+When actuator-facing smoothing is actually required, hardware execution
+exclusively owns `previous_tau_sent_` and the associated transmitted-command
+history. Do not mirror that history onto the control thread or feed it through
+a shared command channel.
 
 ```cpp
 const ControlRequest& request = request_source.GetRequest();
@@ -299,15 +298,16 @@ For every channel, define:
 - whether loss is a warning, recoverable fault, or latched fault.
 
 Failure to acquire a best-effort container must have a bounded response. Typical
-responses include using the previous valid snapshot for one cycle, declaring
-the input unavailable, or issuing a safe command after a stale timeout.
+responses include using the previous valid snapshot within its explicit
+freshness contract or declaring the input unavailable so the joint-command
+controller produces its defined fallback.
 
 Do not spin until a container becomes available. Do not silently use an old
 value without updating age and status.
 
-Shutdown must also be bounded. Define which context stops command publication,
-how the safe command is sent, and whether worker shutdown may block outside the
-real-time path.
+Shutdown must also be bounded. Define which context stops publication, which
+controller or hardware-local protection owns the final output, and whether
+worker shutdown may block outside the real-time path.
 
 ## Keep the Real-Time Path Bounded
 

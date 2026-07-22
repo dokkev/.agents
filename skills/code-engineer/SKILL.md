@@ -1,8 +1,8 @@
 ---
 name: code-engineer
 description: >-
-  Implement, modify, review, test, or validate code when the user explicitly
-  requests the corresponding work. Use for C++, robotics, robot control,
+  Implement, modify, review, test, or validate code only when explicitly
+  requested. Use for C++, robotics, robot control,
   simulation, hardware interfaces, communication, numerical code, ROS 2
   integration, configuration, and research software. Preserve the user's
   requested mode: do not automatically add tests, run tests, perform a code
@@ -11,12 +11,12 @@ description: >-
 
 # Code Engineer
 
-Preserve request scope while producing correct, hardware-safe, numerically valid,
-understandable research code. Avoid unrequired infrastructure or redesign.
+Produce correct, hardware-safe, numerically valid research code within request
+scope. Avoid unrequired infrastructure or redesign.
 
 ## Select The Mode
 
-Choose the smallest explicit mode or combination that satisfies the request.
+Choose the smallest explicit mode satisfying the request.
 
 | User request | Mode | Write scope |
 | --- | --- | --- |
@@ -25,10 +25,9 @@ Choose the smallest explicit mode or combination that satisfies the request.
 | design tests, add tests, improve coverage | **Test** | requested test plan or test files |
 | build, run tests, smoke-check, validate | **Validate** | normally read-only; edit only when fixes are requested |
 
-Do not chain modes. Implementation does not authorize tests, review, or broad
-validation. Review does not authorize fixes; test or validation does not
-authorize production fixes. Reading a test as a contract does not authorize
-changing or running it.
+Do not chain modes. Implementation does not authorize tests, review, launch, or
+broad validation; the narrow compile exception below is allowed. Review does
+not authorize fixes; test or validation does not authorize production fixes.
 
 ## Minimal Context Workflow
 
@@ -56,7 +55,7 @@ python3 scripts/read_reference.py \
 python3 scripts/read_reference.py \
   references/control-discrete-time-implementation.md \
   --section "Core Contract" \
-  --section "Keep Hardware Rate-Limit History Local"
+  --section "Keep Required Hardware Rate-Limit History Local"
 ```
 
 Read `Core Contract` plus one or two matching H2 sections. Read the full file
@@ -72,7 +71,7 @@ Prefer explicit safe repository contracts over general preferences.
 | units, frames, transforms, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
 | function decomposition, helper boundaries, mutation, outputs, status handling, or Eigen lifetime | `references/control-function-implementation.md` |
 | YAML, `yaml-cpp`, controller gains, FSM parameters, limits, thresholds, or timeouts | `references/yaml-configuration.md` |
-| controller-to-hardware `RobotCommand` handoff, hardware validation, limiting, transmission, or hardware-owned command smoothing | `references/hardware-command-boundary.md` |
+| controller-to-hardware `RobotCommand` handoff, hardware validation, limiting, transmission, or required hardware-owned command smoothing | `references/hardware-command-boundary.md` |
 | device or transport I/O, packets, reads/writes, retries, reconnects, or hidden blocking | `references/hardware-io.md` |
 | `Update()`, `Step()`, high-frequency callbacks, preallocation, fallback, or command publication | `references/control-loop-implementation.md` |
 | linear algebra, geometry, manifolds, optimization, tolerances, normalization, regularization, or Eigen expressions | `references/control-numerical-implementation.md` |
@@ -90,8 +89,8 @@ and bounded repeated paths.
 - Start with the simplest direct implementation satisfying known requirements
   and safety constraints.
 - Add abstraction, state, concurrency, caching, retries, reconnects, or timeouts
-  only for an explicit requirement or observed problem. Use the smallest
-  mechanism with one owner.
+  only for an explicit requirement, safety invariant, credible hazard, or
+  observed problem. Use the smallest mechanism with one owner.
 - Follow local style; keep lifecycle, control flow, mathematics, mutation, and
   side effects visible.
 - Do not broaden a local change into package reorganization, API redesign,
@@ -99,8 +98,10 @@ and bounded repeated paths.
 - Initialize fixed storage before high-frequency paths. Preserve freshness,
   finite-value, solver, limit, watchdog, and fallback checks.
 
-Implement mode includes neither automatic tests nor a post-implementation
-review. Compile only when requested or required by the stated build task.
+Implement mode includes neither automatic tests nor review. Compile the
+smallest affected target when a safe canonical command neither launches
+software nor touches hardware. Tests, launch, simulation, dry-run, and hardware
+execution require an explicit request. Otherwise report compilation unverified.
 
 ## Review, Test, And Validate Modes
 

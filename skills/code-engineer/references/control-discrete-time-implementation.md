@@ -19,7 +19,7 @@ requested work actually touches those concerns.
 - [Implement Integrators Deliberately](#implement-integrators-deliberately)
 - [Prefer Measured Velocity to Numerical Differentiation](#prefer-measured-velocity-to-numerical-differentiation)
 - [Discretize Filters for the Actual Update Contract](#discretize-filters-for-the-actual-update-contract)
-- [Keep Hardware Rate-Limit History Local](#keep-hardware-rate-limit-history-local)
+- [Keep Required Hardware Rate-Limit History Local](#keep-required-hardware-rate-limit-history-local)
 - [Order Limits Explicitly](#order-limits-explicitly)
 - [Make Mode Transitions Bumpless](#make-mode-transitions-bumpless)
 - [Treat Warm Starts as Controller State](#treat-warm-starts-as-controller-state)
@@ -110,8 +110,8 @@ if (!std::isfinite(dt)
 ```
 
 The response may instead skip one state update or enter a degraded mode, but it
-must be explicit and safe for the plant. Hardware-owned hold and smoothing
-behavior remains inside the hardware boundary.
+must be explicit and safe for the plant. Any required hardware-local protection
+or smoothing remains inside the hardware boundary.
 
 Distinguish:
 
@@ -251,7 +251,7 @@ Define filter initialization. Common choices are:
 Choose one deliberately. Reset filter history on discontinuous mode, frame,
 unit, signal-source, or sampling-contract changes.
 
-## Keep Hardware Rate-Limit History Local
+## Keep Required Hardware Rate-Limit History Local
 
 Separate controller memory from actuator-facing command smoothing.
 
@@ -259,9 +259,10 @@ A controller may retain its own previous output when that history is part of a
 filter, reference shaper, or control algorithm. Name it for that algorithm and
 do not imply that it is the command applied by hardware.
 
-Torque-command smoothing based on the plant input history belongs to the
-hardware boundary. Keep both its working torque and
-`previous_tau_sent_` private:
+Do not add torque-command smoothing merely because a hardware boundary exists.
+When an explicit plant requirement, safety invariant, credible hazard, or
+observed problem requires smoothing based on transmitted plant input, keep both
+its working torque and `previous_tau_sent_` private to the hardware boundary:
 
 ```cpp
 HardwareStatus RobotHardware::step(const RobotCommand& command)
@@ -286,10 +287,10 @@ perform complete-command validation, absolute protection, device conversion,
 and its defined fault response. Preallocate all dynamic storage before the
 repeated hardware path.
 
-Do not publish `previous_tau_sent_` as controller state, feed it back through
-`Robot::setCommand()`, or create public requested/limited/sent command objects.
-If transmission fails, do not advance the stored value as though the plant
-received the new torque.
+Do not publish `previous_tau_sent_` as controller state, feed it back through a
+control-side command channel, or create public requested/limited/sent command
+objects. If transmission fails, do not advance the stored value as though the
+plant received the new torque.
 
 ## Order Limits Explicitly
 
@@ -304,10 +305,10 @@ A controller-side pipeline may be:
 4. validate finite values;
 5. hand off the complete command.
 
-The hardware boundary then validates its contract, smooths torque relative to
-`previous_tau_sent_`, applies absolute actuator protection, converts units, and
-transmits. Do not duplicate hardware smoothing or absolute protection in the
-controller merely to expose intermediate command stages.
+The hardware boundary then validates its contract, applies any required
+hardware torque smoothing, applies absolute actuator protection, converts
+units, and transmits. Do not duplicate hardware-local smoothing or absolute
+protection in the controller merely to expose intermediate command stages.
 
 This is not a universal order. The correct order depends on the command type,
 plant, and safety boundary. Keep the chosen order visible in the control-loop

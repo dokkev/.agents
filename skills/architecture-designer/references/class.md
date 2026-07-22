@@ -38,33 +38,31 @@ dependency boundaries in robotics and control software.
 The top-level runtime or lifecycle entry point must show the order of one cycle.
 Internal details such as Pinocchio cache updates, solver assembly, ROS message
 conversion, and CAN packing may be hidden, but orchestration must remain visible.
+For Pinocchio-based model control, a visible cycle may look like:
 
 ```cpp
 const StateUpdateResult state_update =
-    robot.updateState(hardware.readState());
+    robot_system.updateState(hardware.readState());
 
-if (!state_update.ok()) {
-  state_machine.handleStateFailure(state_update.status);
-  return;
-}
+const ControllerResult result = [&]() -> ControllerResult {
+  if (!state_update.ok()) {
+    return controller.fallback(robot_system, state_update.status);
+  }
 
-const RobotState state = robot.getState();
-robot.setCommand(planner.step(state, goal));
-const ControllerResult result =
-    controller.step(state, robot.getCommand());
-
-if (!result.ok()) {
-  state_machine.handleControllerFailure(result.status);
-  return;
-}
+  const RobotState state = robot_system.getState();
+  const Reference reference = planner.step(state, goal);
+  return controller.step(robot_system, reference);
+}();
 
 const HardwareStatus hardware_status = hardware.step(result.command);
-diagnostics.record(state, result, hardware_status);
+state_machine.observeControllerStatus(result.status);
+diagnostics.record(state_update, result, hardware_status);
 ```
 
 The exact API spelling belongs to implementation standards. Architecturally,
 the cycle must expose state update, high-level command generation, lower-level
-control, hardware handoff, and failure decisions.
+control, hardware handoff, and failure decisions. A controller that does not
+need shared model data should receive state directly and omit `RobotSystem`.
 
 - Avoid several layers of trivial forwarding wrappers.
 - Reach meaningful behavior within roughly two navigation hops when practical.
@@ -81,10 +79,10 @@ change may have been combined.
 
 | Component | Owns | Must not own |
 | --- | --- | --- |
-| `Controller` | state/current-command-to-final-command policy and controller history | transport, encoder conversion, device lifecycle |
+| `Controller` | state/model/reference-to-complete joint command policy, control-level fallback, and controller history | transport, encoder conversion, device lifecycle |
 | `Planner` | goal/state-to-command planning and planning history | actuator protocol, command transmission |
 | `TrajectoryHandler` | time-parameterized desired-command progression | FSM transitions, device I/O |
-| `Robot` or robot control boundary | trusted state and the current controller-facing command | device transport, hardware limiting, transmitted-command history |
+| `RobotSystem` when model-based control needs it | accepted state plus coherent Pinocchio model data and cache | controller, device transport, hardware limiting, transmitted-command history |
 | `RobotModel` | kinematics, dynamics, model data, and model cache | command transmission or system mode |
 | `StateMachineState` | mode-specific orchestration and simple transition guards | trajectory math, control math, protocol code |
 | FSM coordinator | active state, transitions, and state lifecycle order | motion planning, dynamics, hardware policy |
@@ -111,8 +109,8 @@ Every mutable value must have one authoritative owner.
 | kinematics/dynamics cache | `RobotModel` |
 | solver workspace and warm start | `Solver` |
 | latest sensor snapshot | hardware/state boundary |
-| current controller-facing command | `Robot` or robot control boundary |
-| rate-limit and transmitted-command history | hardware boundary |
+| optional stored controller-facing command | the explicit control-side handoff boundary that requires it |
+| hardware rate-limit and transmitted-command history, when required | hardware boundary |
 
 Do not distribute writes through mutable references, raw pointers, global
 objects, service locators, or generic context bags. Cross a boundary with an
@@ -188,10 +186,10 @@ An acceptable runtime:
 - constructs and connects concrete components;
 - controls configure, activate, deactivate, and shutdown order;
 - shows the calls performed in one cycle;
-- routes results and failures to the responsible component.
+- routes results and statuses to the responsible component.
 
 It must not implement controller math, dynamics, solver assembly, trajectory
-generation, hardware mapping, message conversion, or safety policy.
+generation, hardware mapping, message conversion, or control-level fallback.
 
 Avoid:
 
@@ -204,14 +202,16 @@ Avoid:
 - constructors or getters that connect devices, create threads, load
   parameters, or perform other surprising side effects.
 
-If a repository uses the name `RobotSystem`, it must choose one cohesive role:
+Reserve `RobotSystem` for the model-and-state boundary used by Pinocchio-based
+WBC, OSC, and similar model-based controllers. It keeps accepted `q` and
+`qdot` coherent with the model data and cache consumed by those controllers.
+Controllers that do not need a shared robot model do not need this class.
 
-1. a narrow controller-facing robot boundary that owns trusted state, coherent
-   model data when needed, and the current `RobotCommand`; or
-2. a runtime orchestrator that wires and orders components.
-
-It must not be both, and it must not absorb `RobotModel`, `RobotHardware`,
-controller, planner, or FSM responsibilities behind unrestricted getters.
+Command storage inside `RobotSystem` is a separate project-level handoff
+choice, not part of the model abstraction. Add it only when multiple control
+components or execution contexts require a stored complete command. Do not use
+`RobotSystem` as a runtime orchestrator, hardware manager, service locator, or
+container exposing controller, planner, FSM, and hardware internals.
 
 ## Keep the Structure Shallow
 
@@ -284,8 +284,12 @@ Design named outcomes for at least the relevant cases:
 - controller deadline miss.
 
 Do not silently replace a failure with a zero vector, empty command, or previous
-value. The state machine or runtime-level policy chooses fallback behavior; a
-deep controller or driver reports the failure it owns.
+value. The WBC, OSC, or other controller that produces the joint-level command
+owns the same-cycle control fallback and returns one complete nominal or
+fallback command with status. The runtime or FSM may use that status to choose
+the next behavior, reference, mode, or transition, but must not overwrite the
+controller's command for the same cycle. Hardware applies only its local
+validation, protection, watchdog, and device-fault response.
 
 Use explicit lifecycle when a component owns resources or hardware:
 
@@ -296,7 +300,8 @@ Constructed -> Configured -> Active -> Inactive or Fault
 - Constructors store dependencies and initialize values only.
 - Configuration validates fixed dimensions and contracts.
 - Activation connects or enables resources in a defined order.
-- Deactivation applies the safe command and releases resources explicitly.
+- Deactivation invokes the defined controller shutdown output and
+  hardware-local protection contract, then releases resources explicitly.
 - Partial initialization must be safely reversible.
 - Do not rely on a destructor as the only shutdown or fault policy.
 

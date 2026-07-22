@@ -77,8 +77,9 @@ Select cases from only the concerns in the user's requested test scope.
 | repeated loop | initialization contract, malformed boundary input, every early-return fallback, recovery reset, allocation guard when no-allocation is claimed |
 | discrete time | first update, invalid or excessive `dt`, missed cycle, integrator saturation/anti-windup, filter reset, bumpless transition, warm-start invalidation, rate change |
 | concurrency | complete snapshots, mismatched producer/consumer rates, stale/duplicate/overflow behavior, shutdown lifetime, race detector where practical |
-| command boundary | structural rejection, atomic handoff, hardware limiting, send failure, transmitted-command diagnostic, no partial application |
-| FSM | entry/re-entry/exit order, transition commit boundary, self/invalid/failure transition, complete output on failure |
+| command boundary | structural rejection, atomic handoff, controller fallback completeness, hardware limiting, send failure, transmission status and protection activation, no partial application |
+| hardware I/O | encode/decode round trip, complete and partial frames, length/checksum/sequence rejection, bounded wait, no hidden retry or reconnect, complete-result publication |
+| FSM | entry/re-entry/exit order, transition commit boundary, self/invalid/failure transition, explicit failure outcome and next-behavior semantics |
 | YAML | missing key, wrong type/shape, non-finite or unsafe value, contextual error, atomic live replacement |
 
 Derive expected values and tolerances independently from the implementation

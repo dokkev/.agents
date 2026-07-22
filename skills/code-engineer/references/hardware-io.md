@@ -19,8 +19,8 @@ vendor SDK wrapper.
 
 Start with the simplest implementation that satisfies the known device
 protocol, timing requirement, and safety boundary. Add complexity only for an
-explicit requirement or an observed problem, and add only the smallest
-mechanism that addresses it.
+explicit requirement, safety invariant, credible hazard, or observed problem,
+and add only the smallest mechanism that addresses it.
 
 Hardware I/O performs the requested communication, validates protocol-level
 results, converts representations, and reports what happened. It does not
@@ -28,7 +28,8 @@ invent system recovery or safety policy.
 
 An abstraction, mutable state, thread, queue, cache, retry, reconnect, or
 additional timeout carries a burden of proof. Do not add one for a failure that
-has not occurred and is not required by the device contract.
+has not occurred and is not supported by a protocol requirement or concrete
+safety argument.
 
 ## Keep the Boundary Mechanical
 
@@ -41,8 +42,9 @@ Keep the lowest I/O layer responsible for mechanics such as:
 
 Keep policy above this boundary. Low-level I/O must not independently clamp or
 filter domain commands, interpolate stale feedback, choose a fallback, change
-motor mode, disable hardware, or run a recovery state machine. The owning
-hardware or runtime layer makes those decisions from the reported outcome.
+motor mode, disable hardware, or run a recovery state machine. The joint-command
+controller owns control-level fallback, the runtime or FSM owns later behavior
+and mode decisions, and the hardware boundary owns hardware-local protection.
 
 Do not create a generic transport interface for one concrete device merely in
 case another transport is added later. Extract shared semantics after a second
@@ -69,7 +71,8 @@ only to make a small adapter appear scalable.
 
 Before adding a mechanism, identify:
 
-1. the explicit requirement or reproduced failure;
+1. the explicit requirement, safety invariant, credible hazard, or reproduced
+   failure;
 2. the layer that owns the problem;
 3. why the direct implementation is insufficient;
 4. the smallest change that resolves that specific problem.
@@ -77,6 +80,8 @@ Before adding a mechanism, identify:
 Reasonable evidence-to-mechanism pairs include:
 
 - documented partial frames -> one bounded frame accumulator;
+- a credible stale-command hazard -> one explicit freshness rejection at the
+  owning controller or hardware boundary, not inside LowIO;
 - a measured control-path stall -> isolation in an existing I/O context;
 - a reproducible transient failure with known idempotence -> one bounded retry;
 - an operator-required reconnect workflow -> one explicit reconnect operation.
@@ -130,7 +135,7 @@ recovery.
 Use this progression:
 
 1. implement the direct baseline;
-2. observe or reproduce a real problem;
+2. observe a real problem or identify the concrete requirement or hazard;
 3. locate its cause and owning layer;
 4. add the smallest targeted mechanism;
 5. confirm that the mechanism resolves that problem.

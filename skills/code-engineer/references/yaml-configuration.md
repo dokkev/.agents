@@ -9,7 +9,8 @@ Loading this reference does not authorize tests, validation, or review.
 ## Section Map
 
 - [Core Contract](#core-contract)
-- [Reuse One Small Parser](#reuse-one-small-parser)
+- [Start With One Typed Loader](#start-with-one-typed-loader)
+- [Extract Shared Mechanics Only After Repetition](#extract-shared-mechanics-only-after-repetition)
 - [Keep Domain Config Typed](#keep-domain-config-typed)
 - [Split Validation Responsibility](#split-validation-responsibility)
 - [Required, Optional, And Physical Meaning](#required-optional-and-physical-meaning)
@@ -20,18 +21,38 @@ Loading this reference does not authorize tests, validation, or review.
 
 Parse YAML once during initialization, convert it into project-owned typed
 configuration, validate it, and pass the trusted result to the owning subsystem.
+Start with one direct typed loader for the configuration being added.
 
 Do not spread `YAML::Node` traversal and `.as<T>()` calls across controllers,
 FSM states, planners, hardware classes, and ROS wrappers.
 
-> Centralize YAML mechanics. Keep configuration meaning with its subsystem.
+> Keep YAML at the initialization boundary. Extract shared mechanics only after
+> real duplication appears.
 
-## Reuse One Small Parser
+## Start With One Typed Loader
 
-Prefer one reusable utility such as `YamlParser`. Reuse the repository's
-existing equivalent instead of adding another parser or free-function family.
+For one configuration surface, prefer one domain loader over a generic parser
+class:
 
-The common parser may own:
+```cpp
+Result<ControllerConfig> LoadControllerConfig(
+    const YAML::Node& root,
+    const std::filesystem::path& source_path);
+```
+
+Let that loader own the keys, expected shapes, units, defaults, and domain
+validation for `ControllerConfig`. Normalize `yaml-cpp` exceptions there and
+return the repository's existing `Status`, `Result`, or exception type. Do not
+pass raw YAML nodes into the controller.
+
+Reuse an established repository parser when one already exists and remains
+smaller than adding a competing path. Do not create `YamlParser`, a registry,
+or a free-function family for a hypothetical second configuration.
+
+## Extract Shared Mechanics Only After Repetition
+
+Extract a small shared reader only when two or more real loaders repeat enough
+mechanics or diagnostic behavior to justify it. Shared mechanics may include:
 
 - file loading and the root node;
 - dotted-key or scoped traversal;
@@ -40,30 +61,14 @@ The common parser may own:
 - file and full key-path context in errors;
 - common scalar, sequence, and shape checks.
 
-```cpp
-class YamlParser
-{
-public:
-  static Result<YamlParser> Load(const std::filesystem::path& path);
-
-  template <typename T>
-  Result<T> GetRequired(std::string_view key_path) const;
-
-  template <typename T>
-  Result<T> GetOptional(
-      std::string_view key_path,
-      const T& default_value) const;
-};
-```
-
-Match the repository's `Status`, `Result`, or exception convention. Normalize
-library exceptions at this boundary; do not expose raw YAML nodes or
-`yaml-cpp` exceptions through control-domain APIs.
+Keep the extracted utility mechanical. It must not know controller, task, FSM,
+or hardware schemas. A little repeated YAML traversal is preferable to a
+premature global configuration framework.
 
 ## Keep Domain Config Typed
 
-The shared parser does not own every schema. Each subsystem defines a small
-typed configuration object and a loader that knows its field meaning.
+Each subsystem defines a small typed configuration object and a loader that
+knows its field meaning.
 
 ```cpp
 struct TaskGains
@@ -73,14 +78,14 @@ struct TaskGains
 };
 
 Result<TaskGains> LoadTaskGains(
-    const YamlParser& yaml,
+    const YAML::Node& root,
     std::string_view key_prefix,
     Eigen::Index task_dimension);
 ```
 
 Controllers and FSM states receive `TaskGains`, `FsmConfig`, or another
-project-owned type. They do not receive a file path, parser, or raw YAML node to
-extract settings during execution.
+project-owned type. They do not receive a file path, shared reader, or raw YAML
+node to extract settings during execution.
 
 Keep key names and semantic validation near the domain loader. Do not grow the
 shared parser into a global configuration singleton that knows every task,
@@ -88,7 +93,7 @@ state, controller, and hardware schema.
 
 ## Split Validation Responsibility
 
-The common parser validates mechanics:
+The YAML boundary validates mechanics:
 
 - file and syntax;
 - required-path existence;
@@ -149,7 +154,8 @@ and new fields.
 
 ## Avoid
 
-- multiple parser utilities for the same repository;
+- a generic parser or schema registry before real duplication exists;
+- competing parser utilities after a shared repository boundary exists;
 - mutable process-wide configuration;
 - controllers or FSM states that own YAML mechanics;
 - passing `YAML::Node` through public domain APIs;

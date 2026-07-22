@@ -75,7 +75,8 @@ When relevant, verify that:
 - fixed configuration and storage are established before repeated execution;
 - changing freshness, finite-value, solver, and command-safety conditions remain
   checked at runtime;
-- failure produces the defined fallback rather than stale or partial output;
+- the joint-command controller produces its defined complete fallback rather
+  than stale or partial output;
 - controller history has one owner and explicit reset semantics;
 - controller-produced and hardware-applied command outcomes remain
   distinguishable when hardware protection can change or reject a command;
@@ -100,7 +101,8 @@ the implementation contract; this table supplies the review lens.
 | numerical code | unjustified inverse, arbitrary tolerance, unsafe normalization, manifold misuse, unchecked solver/rank failure, invalid Eigen lifetime |
 | discrete time | undefined `dt`, reset, limiter stage, mode-entry history, multi-rate hold, stale-sample, or catch-up semantics |
 | concurrency | shared mutable snapshots, multiple reads per cycle, missing channel semantics, blocking or unbounded acquisition, unsafe shutdown |
-| command boundary | shared mutable command storage, command ownership in the state object, partial acceptance, unclear limiting/send result, transport leakage |
+| command boundary | unjustified shared command storage, partial acceptance, competing fallback ownership, unclear protection/transmission result, transport leakage |
+| hardware I/O | partial-frame publication, hidden blocking/retry/reconnect, nested timeouts, duplicated recovery, cached feedback presented as new, premature transport abstraction |
 | YAML | parsing in runtime paths, raw node leakage, scattered schema logic, unsafe defaults, partial live update, weak error context |
 
 Do not load every concern reference by default. Open only those needed to

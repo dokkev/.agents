@@ -1,283 +1,212 @@
 # Robot System Architecture
 
-Use this pattern when several control components need one trusted live
-robot-state snapshot and one current controller-facing command. A repository
-may call the boundary `Robot`, `RobotSystem`, or something domain-specific, or
-keep it inside a small runtime when no separate class is justified. It is not a
-master object for the entire application or a hardware manager.
+Use `RobotSystem` when a Pinocchio-based WBC, OSC, or other model-based
+controller needs one accepted live robot state and coherent kinematics or
+dynamics data. Do not introduce it merely to share a command, wrap the runtime,
+or give every component access to the application.
 
 ## Section Map
 
 - [Core Contract](#core-contract)
-- [What Trusted State Means](#what-trusted-state-means)
-- [State Ownership and Access](#state-ownership-and-access)
-- [Command Ownership and Access](#command-ownership-and-access)
-- [State Update Flow](#state-update-flow)
-- [Model and State Coherence](#model-and-state-coherence)
-- [Live State Versus Hypothetical State](#live-state-versus-hypothetical-state)
+- [When the Boundary Is Justified](#when-the-boundary-is-justified)
+- [Accept One Trusted State](#accept-one-trusted-state)
+- [Keep Model and State Coherent](#keep-model-and-state-coherent)
+- [Expose a Narrow Model-and-State API](#expose-a-narrow-model-and-state-api)
+- [Keep Command Storage Optional](#keep-command-storage-optional)
+- [Separate Live and Hypothetical State](#separate-live-and-hypothetical-state)
 - [Responsibility Boundaries](#responsibility-boundaries)
 - [Failure and Freshness](#failure-and-freshness)
 - [Design Checklist](#design-checklist)
 
 ## Core Contract
 
-The robot control boundary stores and exposes the latest accepted `RobotState`
-and the current complete `RobotCommand` in controller-facing domain
-conventions.
-
-The intended direction is:
+`RobotSystem` is the controller-facing model-and-state boundary. It keeps the
+accepted `q` and `qdot` coherent with the Pinocchio model data and cache used by
+model-based control.
 
 ```text
 hardware adapter or estimator
     -> complete RobotState candidate
-trusted-state boundary
-    -> validate and commit RobotState
-Controller, planner, FSM
-    -> immutable state snapshot
-
-Planner, trajectory, or upper control layer
-    -> setCommand(complete RobotCommand)
-Lower controller
-    -> getCommand() and produce the command handed to hardware
+RobotSystem
+    -> validate and accept q, qdot, and metadata
+    -> update Pinocchio model data for that accepted state
+WBC / OSC / model-based controller
+    -> read one coherent model-and-state view
+    -> return one complete nominal or fallback joint command with status
 ```
 
-Other components must not independently assemble, own, or mutate competing
-copies of the current robot state. They obtain the controller-facing snapshot
-from the accepted-state boundary and use the same snapshot for one logical
-cycle.
+It does not own the controller, planner, FSM, hardware transport, actuator
+mapping, transmitted-command history, or application lifecycle. Controllers
+that do not need a shared robot model should receive their required state and
+reference directly instead of being forced through `RobotSystem`.
 
-The boundary may also own or wrap the robot model and its cache when that keeps
-model queries coherent with the stored state. This does not make it the owner of
-the controller, planner, hardware transport, hardware command history, or
-application lifecycle.
+## When the Boundary Is Justified
 
-Do not introduce a separate robot control class merely to satisfy this pattern.
-If the existing runtime already provides the same trusted-state and complete
-command-handoff contracts without becoming a service locator, preserve the
-simpler boundary.
+Use a dedicated `RobotSystem` when several model-based calculations must agree
+on:
 
-## What Trusted State Means
+- the accepted generalized position and velocity;
+- fixed-base or floating-base dimensions and ordering;
+- Pinocchio kinematics, dynamics, frame, Jacobian, or centroidal quantities;
+- the sequence or version of state represented by the model cache.
 
-"Trusted" does not mean that every measurement is physically exact. It means
-that the state crossed an explicit acceptance boundary and satisfies the
-contracts required by its consumers:
+Keep the boundary inside a small controller or runtime when only one component
+uses the model and a separate class adds no ownership value. Do not turn a
+single PD controller, device adapter, or simple state-feedback loop into a
+model framework preemptively.
 
-- dimensions match the configured fixed-base or floating-base model;
-- values required by the active state representation are finite;
-- joint order, generalized-coordinate layout, units, and frames are known;
-- base orientation and other constrained representations are valid;
-- timestamp, sequence, and source metadata are coherent;
-- joint and base data belong to one defined snapshot policy;
-- validity and freshness can be determined without guessing.
+## Accept One Trusted State
 
-The controller may rely on these structural guarantees. Sensor accuracy,
-estimation uncertainty, and task suitability remain separate questions and
-should be represented explicitly when they matter.
+"Trusted" means that the state crossed an explicit acceptance boundary and
+satisfies the structural contract required by its consumers. It does not mean
+that every measurement is physically exact.
 
-## State Ownership and Access
+Validate the relevant properties before acceptance:
 
-The selected boundary is the authoritative owner of the accepted `RobotState`
-snapshot.
+- configured `nq`, `nv`, and actuated dimensions;
+- finite values and valid constrained representations;
+- generalized-coordinate layout, joint order, units, and frames;
+- base and joint snapshot coherence;
+- timestamp, sequence, source, validity, and freshness metadata.
 
-When a dedicated class is justified, prefer a small public boundary such as:
+Build a complete candidate and commit it atomically. A failed update must not
+partially replace the accepted state or model cache. Sensor uncertainty and
+task suitability remain separate explicit inputs when they matter.
+
+## Keep Model and State Coherent
+
+The stored state and state-dependent Pinocchio data must describe the same
+accepted snapshot.
+
+- Update model data only from an accepted state.
+- Do not publish the new state before the required model update is complete.
+- Associate derived data with the state sequence when stale-cache use is
+  otherwise possible.
+- Keep fixed model configuration separate from per-cycle model data.
+- Prevent arbitrary callers from mutating the shared model or cache.
+- Make `nq`, `nv`, and actuated dimensions explicit for floating-base systems.
+
+If calculations require independent workspaces or rates, give those consumers
+their own model-data workspace rather than weakening live-state coherence.
+
+## Expose a Narrow Model-and-State API
+
+Follow local names and types, but keep the public role small:
 
 ```cpp
-class Robot
+class RobotSystem
 {
 public:
-  [[nodiscard]] StateUpdateResult updateState(
+  [[nodiscard]] StateUpdateResult Update(
       const RobotState& candidate);
 
-  [[nodiscard]] RobotState getState() const;
-
-  void setCommand(const RobotCommand& command);
-  [[nodiscard]] const RobotCommand& getCommand() const;
+  [[nodiscard]] const RobotState& state() const;
+  [[nodiscard]] const RobotModelView& model() const;
 
 private:
-  RobotModel model_;
   RobotState state_;
-  RobotCommand command_;
+  PinocchioModel model_;
 };
-```
-
-The class name, types, and method spelling follow the repository. Preserve these
-semantics:
-
-- `getState()` provides a read-only snapshot, not an externally mutable alias;
-- state replacement passes through one validation and commit operation;
-- a failed update cannot leave a partially modified state;
-- consumers do not receive setters for individual internal fields;
-- concurrency mechanisms remain private to the state boundary;
-- the returned snapshot has a defined lifetime and consistency policy.
-
-A by-value return, immutable snapshot handle, or bounded real-time buffer view
-may all be valid. Choose from measured copy cost and execution context. Do not
-expose a non-const reference or pointer to internally owned state.
-
-## Command Ownership and Access
-
-The robot control boundary owns one complete controller-facing command. An
-upper control component loads it with `setCommand()`. A lower controller reads
-it with `getCommand()`, applies feedback or other local adjustment to a
-caller-owned copy, and passes the resulting complete command to hardware.
-
-```cpp
-robot.setCommand(trajectory_handler.step(state, goal));
-
-const RobotCommand command =
-    controller.step(state, robot.getCommand());
-const HardwareStatus status = hardware.step(command);
 ```
 
 Preserve these semantics:
 
-- `setCommand()` makes one complete controller-facing command visible at once;
-- `getCommand()` returns a value, immutable handle, or const view with a defined
-  lifetime; a const reference commonly remains valid until the next
-  `setCommand()` in the same execution context;
-- callers never mutate internal command storage through a writable reference;
-- the boundary does not limit, transmit, or record the actually transmitted
-  command;
-- no public accepted, limited, or sent command lifecycle is created;
-- hardware remains the final owner of validation, protection, smoothing,
-  conversion, transmission, and transmitted-command history.
+- state replacement passes through one validation and commit operation;
+- returned state and model views are read-only and share a defined version;
+- the access lifetime is explicit and safe for the execution context;
+- buffer, lock, and cache mechanics remain private;
+- callers cannot retrieve unrestricted mutable Pinocchio data or hardware
+  objects.
 
-The stored command is a control-side handoff point, not measured state and not
-proof of physical application. Observe the result through later state updates.
-Before the first `setCommand()`, `getCommand()` must follow an explicit
-activation precondition or return an unavailable status rather than a
-plausible-looking default command.
+A by-value snapshot, immutable handle, or bounded real-time view can all be
+valid. Choose from measured copy cost and actual concurrency, not fashion.
 
-## State Update Flow
+## Keep Command Storage Optional
 
-State acquisition and state acceptance are different responsibilities.
-
-```text
-Device packets
-    -> hardware adapter: decode, map, offset, sign, unit conversion
-    -> RobotState candidate in domain units
-    -> trusted-state boundary: validate model/state contract
-    -> atomically commit RobotState
-    -> update state-bound model cache if applicable
-```
-
-The hardware adapter owns vendor communication and conversion from device
-representation. The trusted-state boundary owns whether the resulting domain
-observation is a valid controller-facing state for the configured robot model.
-
-The runtime makes the cycle order visible:
+Command storage is not inherent to `RobotSystem`. Prefer direct flow when one
+runtime call already owns the cycle:
 
 ```cpp
-const RobotState candidate = hardware.readState();
-const StateUpdateResult update = robot.updateState(candidate);
-
-if (!update.ok()) {
-  runtimePolicy.handleStateFailure(update.status);
-  return;
-}
-
-const RobotState state = robot.getState();
-robot.setCommand(planner.step(state, goal));
-const RobotCommand command =
-    controller.step(state, robot.getCommand());
-const HardwareStatus hardware_status = hardware.step(command);
+const RobotState& state = robot_system.state();
+const Reference reference = behavior.Step(state, goal);
+const ControllerResult result =
+    controller.Step(robot_system, reference);
+const HardwareStatus status = hardware.Step(result.command);
 ```
 
-Do not hide device reads, planning, lower-level control, or hardware transmission
-inside `updateState()`, `setCommand()`, or `getCommand()`.
+Add a stored command only when a real handoff requires it, such as separate
+upper and lower control components, multiple consumers, or different execution
+contexts. If `setCommand()` and `getCommand()` are used, treat them as an
+explicit command-channel contract:
 
-## Model and State Coherence
+- replace one complete controller-facing value atomically;
+- expose no writable alias;
+- define lifetime, initial availability, freshness, and concurrency semantics;
+- do not limit, transmit, or record hardware-applied commands there.
 
-When the trusted-state boundary owns state-dependent kinematics or dynamics
-data, the model cache and `RobotState` must describe the same accepted snapshot.
+Keeping that channel inside `RobotSystem` may be convenient in one codebase,
+but it is a project data-flow choice independent of the Pinocchio model
+abstraction.
 
-- Update the cache only from an accepted state.
-- Do not publish the new state before its required cache is ready.
-- Associate derived data with the state sequence or version when stale cache use
-  is otherwise possible.
-- Do not let arbitrary callers mutate the shared model or state-dependent cache.
-- Keep fixed model configuration separate from per-cycle model data.
-- Make generalized position, generalized velocity, and actuated dimensions
-  explicit, especially for floating-base systems.
+## Separate Live and Hypothetical State
 
-If model calculations have independent workspaces or different update rates,
-separate the model service from the state owner rather than weakening state
-coherence. The controller should still receive one clear current-state snapshot.
+MPC, optimization, simulation, and rollout code must not overwrite accepted
+live state to evaluate a candidate.
 
-## Live State Versus Hypothetical State
-
-Optimization, MPC, simulation, and rollout code often evaluate hypothetical
-states. These must not overwrite the accepted live `RobotState`.
-
-Use one of the following:
+Use one of:
 
 - stateless model queries with explicit hypothetical `q` and `qdot`;
-- a separate rollout/model workspace;
-- a local copied model-data context owned by the solver or planner.
+- a solver- or planner-owned copied model-data workspace;
+- a separate rollout model instance.
 
-Keep the distinction visible:
-
-```text
-accepted live state     = trusted robot snapshot
-Rollout state           = hypothetical planning or optimization sample
-Simulator internal state = backend-owned simulation state
-```
-
-Only the acquisition or estimation path may commit the live state. A controller
-must not call `updateState()` merely to evaluate a candidate configuration.
+Keep accepted live state, rollout state, and simulator-internal state visibly
+distinct. Only the acquisition or estimation path may commit live state.
 
 ## Responsibility Boundaries
 
 | Component | Owns | Must not own |
 | --- | --- | --- |
-| hardware adapter | device I/O, decoding, actuator mapping, raw-to-domain conversion | controller policy or authoritative model validation |
-| robot control boundary | accepted `RobotState`, current controller-facing `RobotCommand`, robot-state contract, state/model coherence | controller, FSM, planner, device transport, hardware limits, transmitted-command history |
-| `RobotModel` | fixed model, kinematics/dynamics operations, required workspaces | hardware communication or system mode |
-| estimator | estimate generation and estimator history | unrestricted mutation of stored robot state |
-| controller | feedback adjustment and controller history | acquisition, state ownership, command transmission |
-| runtime | lifecycle, call order, and failure routing | model math or hidden state mutation |
+| hardware adapter | device I/O, decoding, actuator mapping, raw-to-domain conversion | control policy or model validation |
+| `RobotSystem` | accepted live state, Pinocchio model data, state/model coherence | controller, FSM, planner, hardware, generic application context |
+| controller | model/state/reference-to-joint-command calculation, control-level fallback, controller history | acquisition, transport, hardware-local protection |
+| solver | one mathematical solve and its workspace or warm start | system mode or fallback behavior |
+| runtime/FSM | call order, reference/behavior choice, mode transition, lifecycle | same-cycle joint-command fallback or model math |
+| `RobotHardware` | command handoff to the plant and hardware-local protection | planning or control fallback policy |
 
-Do not pass a trusted-state object everywhere as a service locator. A component
-that only needs state should receive `RobotState`. A component that needs model
-operations should depend on the narrow model contract it actually uses.
+Pass `RobotState` when a component only needs state. Pass a narrow model view
+when it needs model quantities. Do not pass unrestricted `RobotSystem&` to every
+class as a service locator.
 
 ## Failure and Freshness
 
-State update outcomes must distinguish the failures relevant to the system,
-such as:
+Report state rejection reasons such as invalid dimensions, non-finite data,
+timestamp regression, stale observation, representation mismatch, or
+unavailable initial state. Preserve the last accepted state for diagnostics,
+but never present it as a fresh successful update.
 
-- invalid dimensions or representation;
-- non-finite data;
-- inconsistent joint and base snapshots;
-- timestamp regression or unacceptable skew;
-- stale observation;
-- model/state convention mismatch;
-- unavailable initial state.
+The joint-command-producing controller owns the same-cycle control fallback.
+It returns one complete fallback command and status when its solver, model
+input, or accepted state is unusable under its contract. The runtime or FSM may
+react to that status by changing the next reference, behavior, or mode.
+`RobotHardware` independently applies only hardware-local validation,
+protection, watchdog, and device-fault response.
 
-On rejection, preserve the last accepted snapshot for diagnostics but report
-that the new candidate failed. Do not silently present the old snapshot as
-fresh. The runtime or FSM policy decides whether to hold, degrade, transition to
-a fault state, or stop control.
-
-Before the first accepted update, `getState()` must not return plausible-looking
-zero data as though it were valid. Use an explicit unavailable result, validity
-status, or activation precondition.
+Before the first accepted update, do not return plausible zero state as valid.
+Use an explicit unavailable result or require a valid initial-state activation
+precondition.
 
 ## Design Checklist
 
-Before accepting a robot control boundary, verify:
-
-1. Is its primary role to own and expose controller-facing robot state and the
-   current controller-facing command?
-2. Does every live-state write cross one validation and commit boundary?
-3. Do consumers use one coherent snapshot per logical cycle?
-4. Are dimensions, joint order, units, frames, timestamps, and validity defined?
-5. Are hardware decoding and transport kept outside the state owner?
-6. Are state-dependent model results coherent with the snapshot they describe?
-7. Are hypothetical rollout states isolated from live robot state?
-8. Can stale or rejected updates be distinguished from fresh accepted state?
-9. Do `getState()` and `getCommand()` avoid exposing internally mutable state?
-10. Does `setCommand()` replace one complete controller-facing command without
-    inventing hardware command stages?
-11. Has the boundary avoided becoming a controller, planner, FSM, hardware
-    manager, or generic dependency container?
+1. Does this controller actually require a shared Pinocchio model-and-state
+   boundary?
+2. Does every live-state write cross one validation and atomic commit point?
+3. Do the accepted state and model cache describe the same sequence?
+4. Are dimensions, ordering, units, frames, timestamps, and validity explicit?
+5. Are hardware decoding, transport, and protection outside `RobotSystem`?
+6. Are hypothetical rollout states isolated from accepted live state?
+7. Does the controller return a complete nominal or fallback joint command?
+8. Is any stored command justified by a real handoff and kept separate from
+   hardware-applied command history?
+9. Have non-model-based controllers avoided an unnecessary `RobotSystem`?
+10. Has the boundary avoided becoming a runtime, hardware manager, controller,
+    FSM, planner, or generic dependency container?
