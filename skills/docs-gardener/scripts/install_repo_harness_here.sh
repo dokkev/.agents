@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: install_repo_harness_here.sh [--dry-run] [--overwrite] [--target PATH]
+Usage: install_repo_harness_here.sh [--dry-run] [--target PATH]
 
 Install the docs-gardener repo harness into the current workspace.
 
@@ -13,7 +13,6 @@ Default target selection:
 
 Options:
   --dry-run            Print planned changes without writing files.
-  --overwrite          Overwrite existing harness files instead of skipping them.
   --target PATH        Install into PATH instead of auto-detecting the current workspace.
   -h, --help           Show this help.
 EOF
@@ -35,7 +34,7 @@ while (($#)); do
       target="$2"
       shift 2
       ;;
-    --dry-run|--overwrite)
+    --dry-run)
       args+=("$1")
       shift
       ;;

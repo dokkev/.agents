@@ -4,10 +4,9 @@ Read first:
 
 - `docs/ARCHITECTURE.md`
 - `docs/COMMANDS.md`
-- `docs/DECISIONS.md`
-- `docs/PLANS.md`
 
-Use these files as the repository harness.
+Use these files as the repository harness. If either file is absent, inspect the
+repository instead of assuming its contents.
 
 Guidelines:
 
@@ -15,5 +14,6 @@ Guidelines:
 - Put detailed project context under `docs/`.
 - Prefer small, reviewable diffs.
 - Preserve existing behavior unless explicitly asked to change it.
-- Run the narrowest relevant validation command from `docs/COMMANDS.md` when practical.
+- Use the documented build location and compilation command from
+  `docs/COMMANDS.md`.
 - If validation cannot be run, clearly state what was not verified.

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Smoke Tester"
-  short_description: "Run narrow build and runtime checks"
-  default_prompt: "Use $smoke-tester to run the narrowest useful build, test, launch, or runtime checks and report actionable failures."

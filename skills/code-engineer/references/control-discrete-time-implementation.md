@@ -1,12 +1,14 @@
 # Control Discrete-Time Implementation
 
+Loading this reference does not authorize tests, validation, or review. Use its
+Verification and Review Rules sections only in explicitly requested modes.
+
 Use this standard for control calculations that depend on elapsed time or retain
 state between cycles, including integrators, numerical derivatives, filters,
 rate limiters, trajectories, timeouts, mode transitions, and solver warm starts.
 
-Apply it together with `control-loop-implementation.md`,
-`control-numerical-implementation.md`, and `control-concurrency.md` when these
-calculations run in a control thread.
+Select loop, numerical, or concurrency references separately only when the
+requested work actually touches those concerns.
 
 ## Contents
 

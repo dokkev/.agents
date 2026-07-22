@@ -1,58 +1,50 @@
 # Commands
 
-This file records the commands needed to build, test, run, debug, and validate this repository.
+This file records where the repository is built and the exact commands required
+to compile it. Run commands from the repository root unless a section says
+otherwise.
 
-## Environment
+## Locations
 
-```bash
-# TODO: source workspace, activate venv, load environment variables, etc.
-```
+| Purpose | Path |
+| --- | --- |
+| Source root | Replace with the repository or workspace source path |
+| Build directory | Replace with the generated build path |
+| Install directory | Replace with the install path, or state that none is used |
+| Output artifacts | Replace with the binary or library output path |
 
-## Build
-
-```bash
-# TODO
-```
-
-## Test
-
-```bash
-# TODO
-```
-
-## Lint or static checks
+## Environment setup
 
 ```bash
-# TODO
+# Replace with required environment activation or setup.
 ```
 
-## Run
+## Configure
 
 ```bash
-# TODO
+# Replace with the configure or dependency command, if required.
 ```
 
-## Dry run, fake mode, or safe validation
-
-Use this before real hardware, production deployment, or irreversible operations when possible.
+## Compile
 
 ```bash
-# TODO
+# Replace with the canonical full build command.
 ```
 
-## Debugging commands
+## Focused compile
 
 ```bash
-# TODO
+# Replace with package- or target-specific build commands when they are useful.
 ```
 
-## Validation policy
+## After compiling
 
-* Use the narrowest relevant check first.
-* Do not claim a test, build, simulation, dry run, or hardware run was performed unless it was actually performed.
-* If a command cannot be run, clearly state what was not verified.
-* For risky changes, prefer dry-run, fake mode, log replay, simulation, or limited-scope validation before full operation.
+```bash
+# Replace with required install-space sourcing or artifact lookup.
+```
 
-## Known issues
+## Build constraints
 
-* TODO: missing dependencies, flaky tests, required hardware, environment assumptions, or platform-specific problems.
+- Record compiler, platform, dependency, workspace, or hardware assumptions that
+  materially affect compilation.
+- Do not claim a command was verified unless it was actually executed.

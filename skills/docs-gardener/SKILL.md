@@ -1,32 +1,49 @@
 ---
 name: docs-gardener
-description: Keep repository knowledge current by comparing docs, AGENTS.md, plans, comments, examples, and code behavior. Use when the user asks to update docs after code changes, find stale documentation, create agent-readable repo maps, prune obsolete guidance, or turn repeated feedback into durable documentation.
+description: Maintain a small, accurate repository harness centered on AGENTS.md, docs/ARCHITECTURE.md, and docs/COMMANDS.md. Use when the user asks to document code direction, ownership, dependencies, runtime flow, compilation commands, source/build/install locations, repo-specific agent guidance, stale documentation, or a minimal harness for a repository.
 ---
 
 # Docs Gardener
 
-Treat repository documentation as an agent-readable knowledge system. Prefer short maps that point to authoritative details over one giant instruction file.
+Keep repository documentation small enough to remain trustworthy. Document durable
+code direction and reproducible build knowledge, not session history.
 
 ## Workflow
 
-1. Identify the knowledge surface: `AGENTS.md`, `README.md`, `docs/`, examples, comments, runbooks, plans, or generated references.
-2. Compare documented claims against current code, tests, config, scripts, and observed behavior.
-3. Classify gaps as stale, missing, duplicated, misplaced, too broad, or not machine-actionable.
-4. Update the smallest durable document that future agents and humans are likely to read.
-5. If a rule is repeated often, suggest whether it should become a lint check, test, script, or skill instruction.
+1. Read the closest `AGENTS.md`, `docs/ARCHITECTURE.md`, and
+   `docs/COMMANDS.md` when present.
+2. Compare their claims with source layout, build files, scripts, configuration,
+   tests, and observed behavior.
+3. Classify each gap as stale, missing, duplicated, misplaced, or unverifiable.
+4. Update the smallest authoritative document for the knowledge.
+5. Verify paths and commands when practical. Never label an unexecuted command as
+   verified.
+6. Remove obsolete guidance instead of preserving it as history.
 
 ## What To Maintain
 
-- `AGENTS.md`: short map, repo-specific entry points, validation commands, and links to deeper docs.
-- `docs/ARCHITECTURE.md`: repository shape, boundaries, runtime wiring, and public contracts.
-- `docs/COMMANDS.md`: setup, run, test, lint, build, and smoke-check commands.
-- `docs/PLANS.md`: current work, next steps, ideas, completed notes, and follow-ups.
-- `docs/DECISIONS.md`: stable choices, tradeoffs, and constraints future sessions should preserve.
-- Optional deeper docs: generated references, API details, quality notes, or runbooks only when the project has enough complexity to justify them.
+- `AGENTS.md`: short repo-specific rules, entry points, and links to authoritative
+  documents.
+- `docs/ARCHITECTURE.md`: accepted code direction, component responsibility,
+  ownership, dependency direction, runtime flow, and public boundaries. When the
+  implementation is mid-migration, distinguish current structure from the target
+  direction explicitly.
+- `docs/COMMANDS.md`: exact compilation commands and the source, build, install,
+  and output locations they use.
+- `README.md`: human-facing project introduction and basic usage when the
+  repository already uses it for those purposes.
+- Optional focused documents such as `docs/TESTING.md` only when the repository
+  has enough stable, reusable knowledge to justify them.
+
+Do not create `PLANS.md` or `DECISIONS.md` as part of the default harness.
+Short-lived plans belong in the active issue, PR, or task. Durable architectural
+choices and their necessary rationale belong next to the affected direction in
+`ARCHITECTURE.md`.
 
 ## Repo Harness Template
 
-Use the bundled lightweight template when the user asks to create an agent-readable repo harness. It is meant for small projects, vibe-coding sessions, prototypes, or repositories where documentation overhead should stay minimal.
+Use the bundled template only when the user explicitly asks to install or create
+a repo harness. Normal documentation maintenance does not reinstall the harness.
 
 - Template root: `templates/`
 - Installer: `scripts/install_repo_harness.py`
@@ -37,8 +54,6 @@ The template creates:
 - `AGENTS.md` at the repository root
 - `docs/ARCHITECTURE.md`
 - `docs/COMMANDS.md`
-- `docs/PLANS.md`
-- `docs/DECISIONS.md`
 
 Prefer the installer for a new repo:
 
@@ -46,27 +61,17 @@ Prefer the installer for a new repo:
 python3 "$HOME/.agents/skills/docs-gardener/scripts/install_repo_harness.py" <repo-root>
 ```
 
-To install into the current workspace, prefer:
+To install into the current workspace:
 
 ```bash
 "$HOME/.agents/skills/docs-gardener/scripts/install_repo_harness_here.sh" --dry-run
 "$HOME/.agents/skills/docs-gardener/scripts/install_repo_harness_here.sh"
 ```
 
-If the global wrapper is installed, use:
-
-```bash
-codex-harness --dry-run
-codex-harness
-```
-
-The wrapper calls:
-
-```bash
-"$HOME/.agents/skills/docs-gardener/scripts/install_repo_harness_here.sh" --dry-run
-```
-
-Run with `--dry-run` first when the target may already contain docs. Existing files are skipped unless `--overwrite` is passed.
+Run with `--dry-run` first. The installer creates only missing files and never
+overwrites existing repository documentation. After installation, replace the
+template prompts with facts from the target repository; do not leave a generic
+template as the final result.
 
 ## Output Format
 
@@ -94,9 +99,17 @@ Remaining documentation gaps:
 - Keep repo-level `AGENTS.md` at the repository root because Codex expects it there.
 - Store harness templates in `templates/`; map `templates/AGENTS.md` to repo-root `AGENTS.md` and all other template files to `docs/`.
 - Generate harness documents under `docs/`, but do not generate `docs/AGENTS.md` as the primary agent entrypoint.
-- If an extra docs-level guide is useful, name it `docs/HARNESS.md` or `docs/CODEX_GUIDE.md`.
+- Do not create a document solely to fill a standard list.
+- Do not use `PLANS.md` as a backlog, status log, or completed-work archive.
+- Do not use `DECISIONS.md` as a chronological decision log.
+- Keep architectural rationale beside the boundary or direction it explains.
+- Keep `COMMANDS.md` focused on compilation and build locations rather than
+  turning it into a general operational runbook.
 - Do not preserve stale docs just because they are detailed.
 - Do not create new docs when a small update to an existing authoritative file is clearer.
 - Keep docs specific enough for an agent to act on.
 - Prefer links and indexes over duplicated guidance.
 - Mark uncertainty explicitly when code behavior cannot be verified.
+- Do not update docs for every implementation diff. Update them when code
+  direction, a public boundary, ownership, dependency flow, or the compilation
+  procedure changes.

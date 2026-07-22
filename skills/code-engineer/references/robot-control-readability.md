@@ -2,6 +2,10 @@
 
 Use this reference for C++, robotics, control, simulation, hardware interface, communication, numerical, and performance-sensitive code.
 
+Loading this reference does not authorize tests, validation, or a review. Apply
+those sections only when the user explicitly selected the matching
+`code-engineer` mode.
+
 ## Contents
 
 - [Primary Goal](#primary-goal)
@@ -35,7 +39,7 @@ Prioritize, in this order:
 4. Readability for beginners
 5. Clear data flow
 6. Memory discipline in repeated or high-frequency paths
-7. Validation
+7. Explicitly requested validation
 
 The code should be easy to understand for someone reading the repository for the first time.
 
@@ -46,15 +50,13 @@ Prefer code where the reader can understand what happens before needing to inspe
 Before making non-trivial edits:
 
 1. Read the closest `AGENTS.md`.
-2. If present, read:
-   - `docs/ARCHITECTURE.md`
-   - `docs/COMMANDS.md`
-   - `docs/DECISIONS.md`
-   - `docs/PLANS.md`
-3. Inspect the existing implementation before introducing new structure.
-4. Identify the smallest set of files needed for the task.
-5. Preserve existing behavior unless the task explicitly asks for behavior change.
-6. If the task is ambiguous, make a minimal reasonable assumption and state it.
+2. Read `docs/ARCHITECTURE.md` only when the task touches code direction,
+   ownership, dependency, runtime flow, or a public boundary.
+3. Read `docs/COMMANDS.md` only when compilation or validation is requested.
+4. Inspect the existing implementation before introducing new structure.
+5. Identify the smallest set of files needed for the task.
+6. Preserve existing behavior unless the task explicitly asks for behavior change.
+7. If the task is ambiguous, make a minimal reasonable assumption and state it.
 
 Do not start by inventing a new architecture.
 
@@ -614,7 +616,9 @@ Utility package rules:
 - Prefer domain-specific utility names such as `geometry_utils`, `math_utils`, `protocol_utils`, `safety_utils`, or `memory_utils`.
 - Avoid dumping grounds like `misc`, `common`, or `helpers`.
 - Keep utility functions deterministic and easy to test.
-- Add deterministic tests for utilities that handle math, units, encoding, decoding, limits, or protocol behavior.
+- When tests are explicitly requested, prioritize deterministic tests for
+  utilities that handle math, units, encoding, decoding, limits, or protocol
+  behavior.
 - Avoid hidden global state.
 - Avoid unexpected allocation in hot paths.
 
@@ -688,7 +692,10 @@ If a change could affect physical systems, deployed systems, data integrity, or 
 
 ## Testing And Validation
 
-After implementation, run the narrowest relevant check from `docs/COMMANDS.md` when practical.
+Use this section only in an explicitly requested Test or Validate mode. Do not
+turn a normal implementation into an automatic test or validation pass.
+
+Run the narrowest check that matches the user's requested scope.
 
 If no command is known, inspect the repository for likely build or test commands.
 
@@ -706,7 +713,7 @@ For these areas, prefer deterministic tests with known input/output examples:
 - State-machine transitions
 - Utility functions
 
-If tests cannot be run, clearly state what was not verified.
+If requested tests cannot be run, clearly state what was not verified.
 
 ## Report Format
 

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Code Implementer"
-  short_description: "Implement clear, practical research control code"
-  default_prompt: "Use $code-implementer to implement this change with a small, readable, validated diff."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Engineer"
+  short_description: "Implement or inspect code in the requested mode"
+  default_prompt: "Use $code-engineer for this code task. Preserve my requested scope, load only relevant references, and do not add tests or review unless I ask."
