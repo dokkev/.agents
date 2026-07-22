@@ -1,4 +1,0 @@
-interface:
-  display_name: "Architecture Reviewer"
-  short_description: "Review boundaries and dependency flow"
-  default_prompt: "Use $architecture-reviewer to review module boundaries, dependency direction, layering, and architectural drift."
