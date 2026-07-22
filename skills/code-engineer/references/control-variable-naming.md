@@ -1,7 +1,6 @@
 # Control Variable Naming
 
-Loading this reference does not authorize tests or review. Use Review Rules only
-in an explicitly requested Review mode.
+Loading this reference does not authorize tests, validation, or review.
 
 Use this standard for variables, fields, parameters, and intermediate values in
 robot control, estimation, planning, optimization, simulation, and hardware
@@ -18,7 +17,6 @@ select `control-data-conventions.md` separately when that trigger applies.
 - [Context-Owned Semantics](#context-owned-semantics)
 - [Compound Names](#compound-names)
 - [Naming Length and Context](#naming-length-and-context)
-- [Review Rules](#review-rules)
 
 ## Core Principle
 
@@ -228,21 +226,3 @@ ApplyCommandLimits(&command);
 Do not impose a rigid character limit. Prefer a short name when it communicates
 the same meaning. Add qualifiers only when they distinguish real alternatives
 in the same scope or API.
-
-## Review Rules
-
-Flag names that:
-
-- repeat their class or container context;
-- narrate the complete function signature;
-- use a pipeline suffix with the wrong meaning;
-- combine multiple pipeline stages;
-- hide whether a value is generalized, actuated-joint, or motor side when more
-  than one can exist;
-- omit a required frame or attach a frame suffix without a defined convention;
-- name raw or non-SI interface data like canonical model-side state;
-- hide the physical quantity behind `data`, `result`, `output`, or `value`;
-- introduce a new abbreviation where established notation already exists.
-
-Do not recommend a longer name when the signature and surrounding context
-already make the meaning clear.

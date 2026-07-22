@@ -14,11 +14,14 @@ real-time requirements without importing production-scale infrastructure.
 
 ## Workflow
 
-1. Read the closest `AGENTS.md` and relevant repository maps:
-   - `docs/ARCHITECTURE.md`
-   - `docs/COMMANDS.md`
+1. Read the closest `AGENTS.md`. Read repository maps only when relevant:
+   - read `docs/ARCHITECTURE.md` for accepted ownership, dependencies, runtime
+     flow, public boundaries, or migration direction;
+   - read `docs/COMMANDS.md` only when build layout, generated artifacts,
+     deployment, or validation commands affect the design.
 2. Inspect the existing component graph, public types, runtime entry point,
-   build targets, and tests before proposing new boundaries.
+   build targets, and only the tests that act as relevant executable contracts
+   before proposing new boundaries.
 3. State the architectural problem and constraints. Distinguish current defects
    from optional improvements.
 4. Trace one complete control cycle and the important failure paths.
@@ -43,13 +46,17 @@ repository's implementation standards.
 | class responsibility, component ownership, runtime flow, hardware boundary, public domain types, lifecycle, failure, or dependency direction | `references/class.md` |
 | authoritative robot state, controller-facing state access, state validation, state/model coherence, live versus rollout state, or `RobotSystem` responsibility | `references/robot-system.md` |
 | control-cycle ordering, ROS 2 `read-update-write` flow, thin ROS wrappers, `RobotHardware` orchestration, ROS interface storage, command flow, or multi-rate runtime boundaries | `references/runtime-dataflow.md` |
-| states, modes, transitions, state lifecycle, `FSMHandler`, trajectory generation, or motion planning | `references/finite-state-machine.md` |
+| states, modes, transitions, state lifecycle, FSM coordination, trajectory generation, or motion planning | `references/finite-state-machine.md` |
 | whether to create, merge, or split a ROS 2 package, target, node, interface package, hardware package, description package, or bringup package | `references/ros2-package.md` |
 | C++ header boundary, include dependency, forward declaration, nested/shared type placement, template definition, or file split | `references/header.md` |
 
 Read multiple references when a decision crosses concerns. Repository-specific
 hardware, timing, frame, unit, and deployment contracts override general
 preferences when they are explicit and safe.
+
+For a reference longer than 100 lines, preview its `Contents` first and read
+only the sections needed for the decision. Read the full file only when the
+task genuinely crosses most of its concerns.
 
 ## Core Rules
 

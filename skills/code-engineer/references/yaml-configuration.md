@@ -4,6 +4,18 @@ Use this reference when implementing or inspecting YAML configuration with
 `yaml-cpp`, especially controller gains, WBC tasks, FSM parameters, hardware
 limits, thresholds, timeouts, and other runtime settings.
 
+Loading this reference does not authorize tests, validation, or review.
+
+## Contents
+
+- [Core Boundary](#core-boundary)
+- [Reuse One Small Parser](#reuse-one-small-parser)
+- [Keep Domain Config Typed](#keep-domain-config-typed)
+- [Split Validation Responsibility](#split-validation-responsibility)
+- [Required, Optional, And Physical Meaning](#required-optional-and-physical-meaning)
+- [Runtime And Errors](#runtime-and-errors)
+- [Avoid](#avoid)
+
 ## Core Boundary
 
 Parse YAML once during initialization, convert it into project-owned typed
@@ -144,7 +156,3 @@ and new fields.
 - parsing or allocation in the control loop;
 - implicit precedence among YAML, ROS parameters, and environment variables;
 - reflection or registration frameworks for a small set of configs.
-
-If the user explicitly requests tests or review, use `testing.md` or `review.md`
-and cover the relevant parser/loader failure paths. YAML implementation alone
-does not authorize adding tests or performing a review.

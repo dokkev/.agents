@@ -1,7 +1,6 @@
 # Control Numerical Implementation
 
-Loading this reference does not authorize tests, validation, or review. Use its
-Verification and Review Rules sections only in explicitly requested modes.
+Loading this reference does not authorize tests, validation, or review.
 
 Use this standard for linear algebra, geometry, optimization, filtering,
 integration, and other numerical work in robot control, estimation, planning,
@@ -24,8 +23,6 @@ when their triggers apply.
 - [Use Eigen Deliberately](#use-eigen-deliberately)
 - [Check Solver Results](#check-solver-results)
 - [Keep Repeated Numerics Deterministic and Bounded](#keep-repeated-numerics-deterministic-and-bounded)
-- [Verification](#verification)
-- [Review Rules](#review-rules)
 
 ## Core Principle
 
@@ -328,7 +325,7 @@ In a control loop:
 - preallocate factorization and solver workspaces when supported;
 - avoid input-dependent allocation and algorithm selection;
 - initialize every value before use;
-- use a deterministic random seed when sampling is part of a reproducible test;
+- make the random seed explicit when reproducible sampling is required;
 - separate expensive diagnostics from the critical path;
 - record enough status to diagnose fallback activation without formatting logs
   in the loop.
@@ -337,43 +334,3 @@ Determinism does not require identical floating-point bits across all hardware
 and libraries unless the project states that requirement. It does require a
 bounded algorithm, initialized state, controlled randomness, and explicit
 failure behavior.
-
-## Verification
-
-Numerical tests should include:
-
-- a known nominal input and expected output;
-- zero and near-zero magnitudes;
-- values near limits and angle wrap boundaries;
-- non-finite and malformed input at external boundaries;
-- quaternion sign-equivalent inputs;
-- singular or rank-deficient cases;
-- badly scaled but valid cases;
-- solver failure, timeout, and infeasibility;
-- frame, unit, sign, and ordering permutations;
-- repeated execution when allocation or warm-start state matters.
-
-Use tolerances derived from the algorithm and expected scale. A test that only
-checks `allFinite()` is not a correctness test.
-
-## Review Rules
-
-Flag code when:
-
-- it forms an inverse for a solve without justification;
-- it uses exact floating-point equality for an approximate result;
-- a tolerance is an unexplained or dimensionally ambiguous literal;
-- it normalizes or divides without a finite and magnitude check;
-- it subtracts quaternion, rotation, pose, or manifold storage directly;
-- orientation error and angular velocity use different frames;
-- rank loss, conditioning, or solver failure has no defined response;
-- regularization hides a modeling or convention error;
-- matrix symmetry, block structure, or initialization is assumed but not
-  preserved;
-- `noalias()`, `.eval()`, or a non-owning Eigen view is used without satisfying
-  its correctness contract;
-- an unsuccessful or non-finite numerical result can reach command mapping;
-- repeated numerical work is unbounded or allocation behavior is unknown.
-
-Ask for the smallest deterministic test that demonstrates the intended
-numerical contract and its failure path.

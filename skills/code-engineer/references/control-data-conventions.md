@@ -1,7 +1,6 @@
 # Control Data Conventions
 
-Loading this reference does not authorize tests or review. Use its Review Rules
-only in an explicitly requested Review mode.
+Loading this reference does not authorize tests, validation, or review.
 
 Use this standard for units, coordinate frames, state layout, ordering, signs,
 time, and hardware-to-model conversion in robot control, estimation, planning,
@@ -24,7 +23,6 @@ requested work actually touches those concerns.
 - [Signs, Contact, and Limits](#signs-contact-and-limits)
 - [Time and Timestamps](#time-and-timestamps)
 - [Configuration and Interface Contracts](#configuration-and-interface-contracts)
-- [Review Rules](#review-rules)
 
 ## Core Principle
 
@@ -114,7 +112,7 @@ For each conversion:
 - give the scale and offset one owner;
 - make direction and transmission side explicit;
 - reject invalid or non-finite input before publishing trusted state;
-- test zero, sign, scale, saturation, and encode/decode round trips;
+- define zero, sign, scale, saturation, and encode/decode round-trip behavior;
 - avoid applying the same conversion in both an adapter and a controller.
 
 Use `_raw`, `_count`, `_tick`, or an explicit unit suffix only for values that
@@ -334,7 +332,7 @@ During initialization:
   contract;
 - build index maps in both required directions;
 - verify state, command, gain, and limit shapes against the owning order;
-- test a non-trivial permutation, not only an identity mapping.
+- support a non-trivial permutation rather than specializing the identity map.
 
 Do not assume that URDF order, Pinocchio order, ROS message order, CAN ID order,
 actuator ID order, and configuration-file order are identical. Do not sort names
@@ -424,25 +422,3 @@ Use named conversion constants and give them dimensions in comments or types.
 Reject non-finite scales, non-positive gear ratios, invalid limit intervals,
 duplicate names, and unsupported convention identifiers before entering the
 control loop.
-
-## Review Rules
-
-Flag code when:
-
-- SI and non-SI values are mixed after an adapter boundary;
-- a raw device value is named like a model-side physical quantity;
-- motor-side and joint-side values share one variable or limit;
-- gear-ratio direction or torque-constant side is ambiguous;
-- generalized configuration is added or subtracted as a Euclidean vector when
-  it may contain a manifold joint;
-- a transform, twist, wrench, error, or Jacobian lacks a recoverable frame,
-  ordering, or reference point;
-- a quaternion is copied through an assumed memory order;
-- vector ordering is inferred rather than validated;
-- contact force ownership, normal direction, or signed-distance convention is
-  unclear;
-- timestamps from different clock domains are combined;
-- the same conversion appears in multiple layers.
-
-Require a boundary conversion and a focused contract test for any corrected
-unit, frame, ordering, sign, or transmission-side mismatch.

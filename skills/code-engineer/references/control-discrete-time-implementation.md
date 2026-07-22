@@ -1,7 +1,6 @@
 # Control Discrete-Time Implementation
 
-Loading this reference does not authorize tests, validation, or review. Use its
-Verification and Review Rules sections only in explicitly requested modes.
+Loading this reference does not authorize tests, validation, or review.
 
 Use this standard for control calculations that depend on elapsed time or retain
 state between cycles, including integrators, numerical derivatives, filters,
@@ -27,8 +26,6 @@ requested work actually touches those concerns.
 - [Define Multi-Rate Behavior](#define-multi-rate-behavior)
 - [Handle Delayed and Missing Samples](#handle-delayed-and-missing-samples)
 - [Keep the Update Bounded](#keep-the-update-bounded)
-- [Verification](#verification)
-- [Review Rules](#review-rules)
 
 ## Core Principle
 
@@ -37,7 +34,7 @@ stores, and what resets that history.
 
 Do not let `dt`, a previous value, filter state, or warm start become hidden
 ambient state. Their meanings affect the control law and must be visible in the
-class contract, initialization, transition logic, and tests.
+class contract, initialization, and transition logic.
 
 ## Choose the Time Model Explicitly
 
@@ -135,7 +132,7 @@ the control thread.
 struct ControllerHistory {
   Eigen::VectorXd integral_error;
   Eigen::VectorXd filtered_velocity;
-  Eigen::VectorXd previous_sent_torque;
+  Eigen::VectorXd previous_rate_limited_torque;
   SteadyTimePoint previous_cycle_time;
   bool initialized;
 };
@@ -149,7 +146,9 @@ Define exactly what reset clears:
 - integrator state;
 - filter state;
 - derivative previous sample;
-- previous requested, limited, or sent command;
+- previous controller-produced command stage used by the algorithm;
+- previous hardware-applied outcome only when an explicit feedback or result
+  channel provides it;
 - trajectory phase;
 - contact hysteresis;
 - solver warm start;
@@ -289,7 +288,7 @@ local publication stage separately from confirmed hardware application.
 
 ## Order Limits Explicitly
 
-Command constraints do not generally commute. Define and test the order in
+Command constraints do not generally commute. Define and preserve the order in
 which they apply.
 
 A typical pipeline may be:
@@ -297,7 +296,7 @@ A typical pipeline may be:
 1. compute the requested command;
 2. apply mode-specific constraints;
 3. apply velocity or acceleration constraints;
-4. apply rate or jerk limits relative to sent history;
+4. apply rate or jerk limits relative to the selected command-history stage;
 5. apply absolute actuator limits;
 6. validate finite values;
 7. publish the complete command.
@@ -435,53 +434,3 @@ define what happens to the remaining gap.
 
 Keep diagnostics allocation-free on the high-frequency path. Record numeric
 counters and statuses; format them outside the control thread.
-
-## Verification
-
-Test discrete-time code with deterministic sequences, not only steady nominal
-operation.
-
-Include cases for:
-
-- first update;
-- nominal period;
-- accepted jitter limits;
-- zero, negative, non-finite, and excessive `dt`;
-- one missed cycle and a long pause;
-- integrator saturation and recovery;
-- actuator saturation with anti-windup;
-- filter startup and reset;
-- derivative startup and noisy input;
-- mode transitions in both directions;
-- enable after a nonzero previous hardware command;
-- warm-start invalidation after failure or structure change;
-- requested, limited, and sent command divergence;
-- missing and stale samples;
-- changed update frequency.
-
-For filters and controllers, compare against an independently derived expected
-sequence or frequency response where practical. Do not only assert that outputs
-are finite.
-
-## Review Rules
-
-Flag code that:
-
-- uses `dt` without defining nominal versus measured semantics;
-- uses wall or jumpable ROS time for elapsed control time without an explicit
-  simulation or replay contract;
-- clamps invalid `dt` silently;
-- leaves integrator, derivative, filter, limiter, or warm-start reset behavior
-  undefined;
-- differentiates quaternion coefficients or divides by an unchecked interval;
-- reuses filter coefficients at an incompatible sample rate;
-- calls a previous value `previous_command` without defining its pipeline stage;
-- updates sent-command history before the defined send or acceptance boundary;
-- applies command limits in an undocumented or inconsistent order;
-- enters a mode with incompatible history or multiple simultaneous boolean
-  modes;
-- processes an unbounded catch-up loop, history, retry, or event backlog;
-- treats a stale sample as new without an explicit hold model.
-
-Do not demand a sophisticated integrator, filter, or transition framework when
-a short explicit implementation satisfies the actual control requirements.

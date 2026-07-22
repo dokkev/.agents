@@ -1,7 +1,6 @@
 # Control Function Implementation
 
-Loading this reference does not authorize tests or review. Use Review Rules only
-in an explicitly requested Review mode.
+Loading this reference does not authorize tests, validation, or review.
 
 Use this standard when implementing or reviewing controller, estimator,
 planner, solver, simulation, dynamics, kinematics, and numerical functions.
@@ -19,7 +18,6 @@ separately when its trigger applies.
 - [Structure Longer Functions with Sections](#structure-longer-functions-with-sections)
 - [Make Ownership and Data Flow Explicit](#make-ownership-and-data-flow-explicit)
 - [Make Mutation and Side Effects Visible](#make-mutation-and-side-effects-visible)
-- [Review Rules](#review-rules)
 
 ## Core Principle
 
@@ -334,20 +332,3 @@ fills reusable storage.
 ```cpp
 ComputeTaskJacobian(state.q, &jacobian_workspace_);
 ```
-
-## Review Rules
-
-Flag code when:
-
-- the control law or mathematical contribution is hidden behind a helper;
-- understanding one path requires opening several small functions;
-- helpers are thin wrappers with no meaningful contract;
-- a line-count target caused excessive fragmentation;
-- equations, frames, signs, or units are not recoverable from the code;
-- function names repeat class context, use vague verbs, or misrepresent side
-  effects;
-- ownership, output mutation, aliasing, or view lifetime is ambiguous;
-- important mutation or side effects are hidden;
-- low-level protocol or conversion detail overwhelms the main algorithm.
-
-Recommend the smallest change that restores a readable mathematical flow.
