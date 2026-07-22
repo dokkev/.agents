@@ -7,9 +7,9 @@ planner, solver, simulation, dynamics, kinematics, and numerical functions.
 For a repeated high-frequency path, select `control-loop-implementation.md`
 separately when its trigger applies.
 
-## Contents
+## Section Map
 
-- [Core Principle](#core-principle)
+- [Core Contract](#core-contract)
 - [Keep Core Logic Visible](#keep-core-logic-visible)
 - [Name Functions by Observable Behavior](#name-functions-by-observable-behavior)
 - [Helper Boundary](#helper-boundary)
@@ -19,7 +19,7 @@ separately when its trigger applies.
 - [Make Ownership and Data Flow Explicit](#make-ownership-and-data-flow-explicit)
 - [Make Mutation and Side Effects Visible](#make-mutation-and-side-effects-visible)
 
-## Core Principle
+## Core Contract
 
 Keep the mathematical and decision-making flow visible in the main function.
 Use helpers to hide mechanical detail, not algorithmic meaning.

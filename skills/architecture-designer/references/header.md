@@ -3,8 +3,9 @@
 Use these rules to keep headers self-contained, dependencies explicit, type
 placement proportional, and navigation shallow.
 
-## Contents
+## Section Map
 
+- [Core Contract](#core-contract)
 - [Make Headers Self-Contained](#make-headers-self-contained)
 - [Use Forward Declarations Deliberately](#use-forward-declarations-deliberately)
 - [Place Types Near Their Owner](#place-types-near-their-owner)
@@ -13,6 +14,18 @@ placement proportional, and navigation shallow.
 - [Handle Templates Without Hiding the Contract](#handle-templates-without-hiding-the-contract)
 - [Prevent Dependency Cycles](#prevent-dependency-cycles)
 - [File Split Checklist](#file-split-checklist)
+
+## Core Contract
+
+- Make every header self-contained and include what its public contract uses.
+- Place types with the narrowest owner that serves all real consumers.
+- Keep third-party, ROS, vendor, and implementation-only dependencies out of
+  public headers unless they are intentionally part of the API.
+- Use forward declarations only where incomplete types are valid and clearer.
+- Split files to improve ownership, reuse, dependency direction, or navigation;
+  do not enforce one type per header.
+- Keep template definitions visible to instantiation without hiding their
+  behavioral contract.
 
 ## Make Headers Self-Contained
 

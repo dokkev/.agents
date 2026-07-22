@@ -8,9 +8,9 @@ The class and member names below are illustrative. Preserve established local
 names and collapse layers that do not represent a real ownership, middleware,
 hardware, or timing boundary.
 
-## Contents
+## Section Map
 
-- [Design Philosophy](#design-philosophy)
+- [Core Contract](#core-contract)
 - [Runtime Boundaries](#runtime-boundaries)
 - [ROS-Independent Core](#ros-independent-core)
 - [ROS 2 Control Cycle](#ros-2-control-cycle)
@@ -26,7 +26,7 @@ hardware, or timing boundary.
 - [Anti-Patterns](#anti-patterns)
 - [Design Checklist](#design-checklist)
 
-## Design Philosophy
+## Core Contract
 
 Let each layer fully own its domain and delegate through a narrow,
 intention-level contract.

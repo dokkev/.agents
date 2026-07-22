@@ -11,17 +11,12 @@ description: >-
 
 # Code Engineer
 
-Handle code work through one skill while preserving the exact scope and authority
-of the user's request.
-
-Optimize for a research-lab codebase: correct, hardware-safe, numerically valid,
-locally understandable, and practical for another student to modify. Do not add
-production-scale infrastructure or invent a new architecture unless the task
-requires it.
+Preserve request scope while producing correct, hardware-safe, numerically valid,
+understandable research code. Avoid unrequired infrastructure or redesign.
 
 ## Select The Mode
 
-Choose the smallest mode or explicit combination that satisfies the request.
+Choose the smallest explicit mode or combination that satisfies the request.
 
 | User request | Mode | Write scope |
 | --- | --- | --- |
@@ -30,53 +25,46 @@ Choose the smallest mode or explicit combination that satisfies the request.
 | design tests, add tests, improve coverage | **Test** | requested test plan or test files |
 | build, run tests, smoke-check, validate | **Validate** | normally read-only; edit only when fixes are requested |
 
-Do not chain modes by habit.
-
-- An implementation request does not authorize writing or running tests, a
-  separate code review, or a broad validation campaign.
-- A review request does not authorize fixes.
-- A test request does not authorize production-code changes unless the user also
-  asks to fix what the test exposes.
-- A validation request does not authorize fixes unless the user asks for them.
-- Use a hybrid flow such as Review -> Implement or Implement -> Test only when
-  the user explicitly asks for both parts.
-
-Reading an existing test is allowed when it is the nearest executable
-specification for the requested implementation. That does not authorize changing
-or running the test.
+Do not chain modes. Implementation does not authorize tests, review, or broad
+validation. Review does not authorize fixes; test or validation does not
+authorize production fixes. Reading a test as a contract does not authorize
+changing or running it.
 
 ## Minimal Context Workflow
 
-1. Read the closest `AGENTS.md`.
-2. Determine the mode from the user's wording before exploring broadly.
-3. Read repository maps only when relevant:
-   - read `docs/ARCHITECTURE.md` when the task touches ownership, dependencies,
-     runtime flow, public boundaries, or accepted code direction;
-   - read `docs/COMMANDS.md` when the task requires compilation, validation, or
-     build/source/install locations.
-4. Inspect the smallest source surface that owns the requested behavior, plus
-   build, configuration, or tests only when they are directly relevant.
-5. Select only the detailed references whose triggers match the actual change.
-6. Perform only the authorized mode or mode combination.
-7. Report the result, actions actually performed, and relevant uncertainty.
-
-Do not read every repo document or every skill reference up front. If the task
-can be completed from local instructions and the owning code, load no reference.
+1. Read the closest `AGENTS.md` and determine the mode first.
+2. Read `docs/ARCHITECTURE.md` only for relevant code-direction contracts and
+   `docs/COMMANDS.md` only for requested build, validation, or locations.
+3. Inspect the smallest source surface owning the behavior, plus directly
+   relevant build, configuration, or executable-contract files.
+4. Load only references whose triggers match the actual work.
+5. Perform only the authorized mode and report actions actually taken.
 
 ## Progressive Reference Loading
 
-The files under `references/` are an indexable library, not a mandatory reading
-list.
+Start with zero references and choose one primary reference for the dominant
+concern. Add another only when the primary leaves a real contract gap; a second
+trigger match alone is insufficient. Do not load review/testing guidance for
+implementation.
 
-- Start with zero references.
-- Open a reference only after the inspected code reveals its concern.
-- Usually one or two references are enough.
-- Read three or more only when the task genuinely crosses those independent
-  concerns.
-- Do not read both implementation and review/testing guidance merely because
-  they exist.
-- Prefer a repository's explicit local contract over a general preference, but
-  never silently violate physical, numerical, concurrency, or safety contracts.
+For a reference over 100 lines, use the bundled reader. Resolve paths from this
+skill directory; commands are shown from that directory.
+
+```bash
+python3 scripts/read_reference.py \
+  references/control-discrete-time-implementation.md --list
+python3 scripts/read_reference.py \
+  references/control-discrete-time-implementation.md \
+  --section "Core Contract" \
+  --section "Keep Hardware Rate-Limit History Local"
+```
+
+Read `Core Contract` plus one or two matching H2 sections. Read the full file
+only to edit/review it, resolve a three-section conflict, perform a broad
+safety/consistency audit, or follow an unresolved dependency. Apply the same
+heading-first rule to long repository docs; they need no `Core Contract`.
+
+Prefer explicit safe repository contracts over general preferences.
 
 | Trigger in the requested work | Read |
 | --- | --- |
@@ -92,66 +80,33 @@ list.
 | explicit code-review request | `references/review.md` plus only the concern references needed for supported findings |
 | explicit test design, test implementation, build, test run, smoke check, or validation request | `references/testing.md` |
 
-For a reference longer than 100 lines, preview its `Contents` first and read
-only the sections relevant to the requested change. Read the full file only
-when the task genuinely crosses most of its concerns.
-
 ## Implement Mode
 
-Implement the smallest clear diff that owns the requested behavior.
+Implement the smallest clear owning diff. Prioritize safety and correctness,
+unrelated contracts, visible units/frames/timing/ownership/failures, readability,
+and bounded repeated paths.
 
-Prioritize:
+- Prefer direct code and established libraries.
+- Add structure only for a real domain operation, boundary, or duplication.
+- Follow local style; keep lifecycle, control flow, mathematics, mutation, and
+  side effects visible.
+- Do not broaden a local change into package reorganization, API redesign,
+  concurrency, or a generic framework. Surface architectural pressure instead.
+- Initialize fixed storage before high-frequency paths. Preserve freshness,
+  finite-value, solver, limit, watchdog, and fallback checks.
 
-1. correctness and hardware safety;
-2. the requested behavior and preservation of unrelated contracts;
-3. visible ownership, units, frames, timing, and failure behavior;
-4. simplicity and newcomer readability;
-5. bounded, allocation-conscious repeated paths where required.
-
-Prefer direct code and established libraries. Add a helper, class, or utility
-only when it represents a real domain operation, isolates mechanical detail,
-improves safety, or removes meaningful duplication.
-
-Follow the established local C++ style. Keep lifecycle and control functions
-readable as a top-level story, preserve the visible mathematical flow, and use
-precise helper names for mechanical details and side effects. Do not impose a
-repo-wide separator, helper package, or formatting convention that the
-repository has not adopted.
-
-Do not broaden a local change into package reorganization, public API redesign,
-new concurrency, or a generic framework. Surface architectural pressure instead
-of resolving it implicitly.
-
-For high-frequency paths, establish fixed structure and storage during
-initialization. Keep coherent input acquisition, the control calculation,
-runtime safety checks, fallback behavior, and complete command publication
-visible. Do not remove freshness, finite-value, solver-status, limit, or watchdog
-checks merely to shorten the loop.
-
-Implement mode does not include automatic test creation, test execution, or a
-post-implementation code review. A directly relevant compile may be performed
-when compilation is explicitly requested or is necessary to complete the stated
-build task; do not expand it into unrelated checks.
+Implement mode includes neither automatic tests nor a post-implementation
+review. Compile only when requested or required by the stated build task.
 
 ## Review, Test, And Validate Modes
 
-For an explicit review, load `references/review.md`. Keep the work read-only and
-lead with evidence-backed findings unless fixes were also requested.
-
-For explicit test or validation work, load `references/testing.md`. Match the
-requested depth: a test plan, test implementation, one command, a focused build,
-or a smoke check are different scopes.
-
-Do not claim a build, test, launch, simulation, hardware run, or review was
-performed unless it actually was.
+For review, load `references/review.md`, remain read-only, and lead with evidence
+unless fixes were requested. For test or validation, load
+`references/testing.md` and match the requested depth. Never claim an action ran
+unless it did.
 
 ## Final Report
 
-Keep the report proportional to the selected mode.
-
-- **Implement:** behavior changed, important decision, files touched, and what
-  remains unverified. Do not imply tests or review were performed.
-- **Review:** findings first, then assumptions and unreviewed risk.
-- **Test:** tests designed or changed, what they protect, and whether they ran.
-- **Validate:** commands run, result, first actionable failure, and unexercised
-  scope.
+Report proportionally: behavior and unverified scope for implementation;
+findings for review; protection and run status for tests; commands, results,
+first failure, and unexercised scope for validation.

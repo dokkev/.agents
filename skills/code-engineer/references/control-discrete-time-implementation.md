@@ -9,9 +9,9 @@ rate limiters, trajectories, timeouts, mode transitions, and solver warm starts.
 Select loop, numerical, or concurrency references separately only when the
 requested work actually touches those concerns.
 
-## Contents
+## Section Map
 
-- [Core Principle](#core-principle)
+- [Core Contract](#core-contract)
 - [Choose the Time Model Explicitly](#choose-the-time-model-explicitly)
 - [Use a Monotonic Clock](#use-a-monotonic-clock)
 - [Validate Timing Without Hiding It](#validate-timing-without-hiding-it)
@@ -27,7 +27,7 @@ requested work actually touches those concerns.
 - [Handle Delayed and Missing Samples](#handle-delayed-and-missing-samples)
 - [Keep the Update Bounded](#keep-the-update-bounded)
 
-## Core Principle
+## Core Contract
 
 Every calculation with memory must state what advances it, what history it
 stores, and what resets that history.

@@ -9,9 +9,9 @@ simulation, and hardware-interface code.
 Select naming, function, loop, or numerical references separately only when the
 requested work actually touches those concerns.
 
-## Contents
+## Section Map
 
-- [Core Principle](#core-principle)
+- [Core Contract](#core-contract)
 - [Canonical Units](#canonical-units)
 - [Convert Once at Boundaries](#convert-once-at-boundaries)
 - [Generalized, Joint-Side, and Motor-Side Quantities](#generalized-joint-side-and-motor-side-quantities)
@@ -24,7 +24,7 @@ requested work actually touches those concerns.
 - [Time and Timestamps](#time-and-timestamps)
 - [Configuration and Interface Contracts](#configuration-and-interface-contracts)
 
-## Core Principle
+## Core Contract
 
 Every numerical value that crosses a module boundary must have one recoverable
 physical meaning. Its unit, frame, ordering, sign, side of the transmission, and

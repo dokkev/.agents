@@ -74,3 +74,15 @@ in a small local harness:
 
 Ask `$docs-gardener` to create or maintain this harness for a project. It does
 not create `PLANS.md` or `DECISIONS.md` by default.
+
+## Validate context contracts
+
+Run the repository check after changing a skill or reference:
+
+```bash
+python3 scripts/validate_context.py
+```
+
+It enforces skill word budgets, direct reference discovery, unique section
+headings, bounded `Core Contract` sections, complete section maps, and identical
+bundled section readers.

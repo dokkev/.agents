@@ -3,14 +3,28 @@
 Treat a ROS 2 package as a build, dependency, installation, deployment, plugin,
 or stable public-API boundary. Do not use packages merely to organize classes.
 
-## Contents
+## Section Map
 
+- [Core Contract](#core-contract)
 - [Package Versus Directory or Target](#package-versus-directory-or-target)
 - [Strong Reasons to Create a Package](#strong-reasons-to-create-a-package)
 - [Common Robot Package Boundaries](#common-robot-package-boundaries)
 - [Package Dependency Rules](#package-dependency-rules)
 - [Weak Reasons to Create a Package](#weak-reasons-to-create-a-package)
 - [Split and Merge Checklist](#split-and-merge-checklist)
+
+## Core Contract
+
+- Treat a package as a real build, dependency, installation, deployment,
+  plugin, or stable public-API boundary—not a folder for related classes.
+- Prefer directories or CMake targets when code is built, deployed, versioned,
+  and consumed together.
+- Keep reusable control and domain interfaces independent of hardware, vendor,
+  ROS-node, and bringup implementations.
+- Let bringup or an application compose sibling control, hardware, description,
+  and integration packages; do not force control through hardware packages.
+- Split only with concrete evidence and merge boundaries that create navigation
+  and dependency cost without independent value.
 
 ## Package Versus Directory or Target
 
