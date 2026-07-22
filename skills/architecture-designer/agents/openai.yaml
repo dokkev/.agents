@@ -1,0 +1,4 @@
+interface:
+  display_name: "Architecture Designer"
+  short_description: "Design clear research robotics software architecture"
+  default_prompt: "Use $architecture-designer to design a clear, shallow architecture for this robotics codebase."
