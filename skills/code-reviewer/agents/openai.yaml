@@ -1,4 +1,4 @@
 interface:
   display_name: "Code Reviewer"
-  short_description: "Review clarity, safety, and implementation quality"
-  default_prompt: "Use $code-reviewer to review code for correctness, maintainability, readability, unnecessary complexity, testability, and C++/robotics implementation quality."
+  short_description: "Review research code for concrete implementation risks"
+  default_prompt: "Use $code-reviewer to review this code for concrete correctness, readability, and control implementation risks."

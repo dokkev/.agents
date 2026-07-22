@@ -5,7 +5,9 @@ integration, and other numerical work in robot control, estimation, planning,
 simulation, and hardware-interface code.
 
 Apply it together with `control-data-conventions.md`,
-`control-function-implementation.md`, and `control-loop-implementation.md`.
+`control-function-implementation.md`, and `control-loop-implementation.md`. For
+stateful integration, differentiation, filtering, limiting, and warm starts,
+also apply `control-discrete-time-implementation.md`.
 
 ## Contents
 

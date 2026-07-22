@@ -7,7 +7,10 @@ paths.
 Apply this document together with `control-function-implementation.md` and
 `control-variable-naming.md`. Use `control-data-conventions.md` for units,
 frames, ordering, and hardware/model conversions, and
-`control-numerical-implementation.md` for numerical acceptance criteria.
+`control-numerical-implementation.md` for numerical acceptance criteria. Use
+`control-concurrency.md` when data crosses execution contexts and
+`control-discrete-time-implementation.md` when the loop retains history or uses
+elapsed time.
 
 ## Contents
 
