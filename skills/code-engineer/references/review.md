@@ -4,6 +4,16 @@ Load this reference only when the user explicitly asks for a code review,
 inspection, issue search, or assessment. A normal implementation request does
 not trigger a separate review pass.
 
+## Contents
+
+- [Scope And Authority](#scope-and-authority)
+- [Review Order](#review-order)
+- [Evidence Standard](#evidence-standard)
+- [Severity](#severity)
+- [Control-Specific Checks](#control-specific-checks)
+- [Concern Matrix](#concern-matrix)
+- [Report](#report)
+
 ## Scope And Authority
 
 - Establish the exact diff, files, subsystem, or behavior under review.
@@ -67,7 +77,8 @@ When relevant, verify that:
   checked at runtime;
 - failure produces the defined fallback rather than stale or partial output;
 - controller history has one owner and explicit reset semantics;
-- requested, limited, and sent commands remain distinguishable;
+- controller-produced and hardware-applied command outcomes remain
+  distinguishable when hardware protection can change or reject a command;
 - transitions occur once at a defined cycle boundary;
 - retries, queues, iterations, and catch-up work are bounded where deadlines
   matter.
@@ -75,6 +86,25 @@ When relevant, verify that:
 For concurrent code, identify complete-snapshot semantics, writer ownership,
 freshness, overflow, lifetime, acquisition bounds, and shutdown. First establish
 that concurrency is actually required.
+
+## Concern Matrix
+
+Use only the rows relevant to the reviewed code. The concern reference supplies
+the implementation contract; this table supplies the review lens.
+
+| Concern | Look for |
+| --- | --- |
+| data conventions | mixed units or sides, ambiguous frames/signs/order, unsafe quaternion layout, clock-domain mixing, duplicated conversion |
+| functions and naming | hidden mathematical flow, thin helper chains, vague side effects, ambiguous mutation or view lifetime |
+| repeated loops | allocation or resizing, unbounded work, stale/partial fallback, missing changing-condition guards, hidden recovery |
+| numerical code | unjustified inverse, arbitrary tolerance, unsafe normalization, manifold misuse, unchecked solver/rank failure, invalid Eigen lifetime |
+| discrete time | undefined `dt`, reset, limiter stage, mode-entry history, multi-rate hold, stale-sample, or catch-up semantics |
+| concurrency | shared mutable snapshots, multiple reads per cycle, missing channel semantics, blocking or unbounded acquisition, unsafe shutdown |
+| command boundary | shared mutable command storage, command ownership in the state object, partial acceptance, unclear limiting/send result, transport leakage |
+| YAML | parsing in runtime paths, raw node leakage, scattered schema logic, unsafe defaults, partial live update, weak error context |
+
+Do not load every concern reference by default. Open only those needed to
+support a concrete finding or resolve a plausible ambiguity.
 
 ## Report
 

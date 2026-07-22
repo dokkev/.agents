@@ -48,7 +48,8 @@ and failure decisions.
 - Reach meaningful behavior within roughly two navigation hops when practical.
 - Do not hide orchestration inside a callback, manager, or broad façade.
 - Use one coherent state snapshot for the full cycle.
-- Keep requested, accepted or limited, and sent commands distinguishable.
+- Keep controller-produced commands and hardware-applied outcomes
+  distinguishable at their owning boundary.
 
 ## Give Each Class One Role
 
@@ -63,7 +64,7 @@ change may have been combined.
 | `TrajectoryHandler` | time-parameterized reference progression | FSM transitions, device I/O |
 | `RobotModel` | kinematics, dynamics, model data, and model cache | command transmission or system mode |
 | `StateMachineState` | mode-specific orchestration and simple transition guards | trajectory math, control math, protocol code |
-| `FSMHandler` | active state, transitions, and state lifecycle order | motion planning, dynamics, hardware policy |
+| FSM coordinator | active state, transitions, and state lifecycle order | motion planning, dynamics, hardware policy |
 | `Solver` | a defined mathematical solve and warm-start state | system mode or device behavior |
 | `RobotHardware` | domain-state/command mapping to the physical robot | planning or control policy |
 | `ActuatorDriver` | packets, registers, vendor SDK, and device lifecycle | task-space or joint-space control policy |
@@ -80,14 +81,14 @@ Every mutable value must have one authoritative owner.
 | Mutable state | Owner |
 | --- | --- |
 | integrator, filter, and controller history | `Controller` |
-| active mode and transition state | `FSMHandler` |
+| active mode and transition state | FSM coordinator |
 | state-entry-local behavior | concrete FSM state |
 | trajectory time, segment, and waypoint progression | `TrajectoryHandler` |
 | planning search state | `Planner` |
 | kinematics/dynamics cache | `RobotModel` |
 | solver workspace and warm start | `Solver` |
 | latest sensor snapshot | hardware/state boundary |
-| requested, limited, and sent command history | command/hardware boundary |
+| limited and transmitted-command diagnostics | command/hardware boundary |
 
 Do not distribute writes through mutable references, raw pointers, global
 objects, service locators, or generic context bags. Cross a boundary with an
@@ -99,13 +100,13 @@ Use this conceptual direction:
 
 ```text
 Runtime / application
-    -> Planner, Controller, FSMHandler
-    -> RobotHardware
+    -> Planner, Controller, FSM coordinator
+    -> trusted-state and hardware boundaries
 
 Planner, Controller
     -> Domain types, RobotModel, Solver
 
-RobotHardware
+Hardware boundary
     -> Domain types
     -> ROS, simulator, SDK, CAN, serial, DDS
 ```
@@ -177,13 +178,14 @@ Avoid:
 - constructors or getters that connect devices, create threads, load
   parameters, or perform other surprising side effects.
 
-`RobotSystem` is not forbidden, but it must choose one role:
+If a repository uses the name `RobotSystem`, it must choose one role:
 
-1. a narrow domain façade around robot state/command/model operations; or
+1. a narrow accepted-state and coherent-model boundary; or
 2. a runtime orchestrator that wires and orders components.
 
 It must not be both, and it must not absorb `RobotModel`, `RobotHardware`,
-controller, planner, and FSM responsibilities behind unrestricted getters.
+controller, planner, FSM, or command-storage responsibilities behind
+unrestricted getters.
 
 ## Keep the Structure Shallow
 
@@ -292,7 +294,8 @@ Make the following explicit where they cross boundaries:
 - generalized and actuated dimensions;
 - joint order and motor/joint side;
 - timestamp clock and freshness;
-- requested, limited, and sent command stage.
+- controller-produced, hardware-limited, or transmitted command stage when the
+  distinction crosses the boundary.
 
 Default to single-threaded execution. Add threads only to separate real timing
 domains or existing execution contexts. In real-time cycles, exclude heap

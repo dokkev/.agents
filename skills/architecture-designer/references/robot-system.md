@@ -1,8 +1,9 @@
 # Robot System Architecture
 
-Use `RobotSystem` as the narrow robot-domain boundary that owns the state a
-controller is allowed to trust. It is not a master object for the entire
-application.
+Use this pattern when several consumers need one accepted live robot-state
+snapshot. A repository may call the boundary `RobotSystem`, `StateStore`, or
+something domain-specific, or keep it inside a small runtime when no separate
+class is justified. It is not a master object for the entire application.
 
 ## Contents
 
@@ -18,27 +19,33 @@ application.
 
 ## Primary Responsibility
 
-`RobotSystem` stores and exposes the latest accepted `RobotState` in the
-robot-domain conventions used by controllers, planners, and estimators.
+The trusted-state boundary stores and exposes the latest accepted `RobotState`
+in the robot-domain conventions used by controllers, planners, and estimators.
 
 The intended direction is:
 
 ```text
-RobotHardware or estimator
+hardware adapter or estimator
     -> complete RobotState candidate
-RobotSystem
+trusted-state boundary
     -> validate and commit RobotState
 Controller, planner, FSM
-    -> getState()
+    -> immutable state snapshot
 ```
 
 Other components must not independently assemble, own, or mutate competing
 copies of the current robot state. They obtain the controller-facing snapshot
-from `RobotSystem` and use the same snapshot for one logical cycle.
+from the accepted-state boundary and use the same snapshot for one logical
+cycle.
 
-`RobotSystem` may also own or wrap the robot model and its cache when that keeps
+The boundary may also own or wrap the robot model and its cache when that keeps
 model queries coherent with the stored state. This does not make it the owner of
 the controller, planner, hardware transport, or application lifecycle.
+
+Do not introduce a separate state-owning class merely to satisfy this pattern.
+If the existing runtime or estimator already provides the same single-writer,
+validated-snapshot contract without becoming a service locator, preserve the
+simpler boundary.
 
 ## What Trusted State Means
 
@@ -60,9 +67,10 @@ should be represented explicitly when they matter.
 
 ## State Ownership and Access
 
-`RobotSystem` is the authoritative owner of the accepted `RobotState` snapshot.
+The selected boundary is the authoritative owner of the accepted `RobotState`
+snapshot.
 
-Prefer a small public boundary such as:
+When a dedicated class is justified, prefer a small public boundary such as:
 
 ```cpp
 class RobotSystem
@@ -79,7 +87,7 @@ private:
 };
 ```
 
-The exact types and spelling may follow the repository, but preserve these
+The class name, types, and method spelling follow the repository. Preserve these
 semantics:
 
 - `getState()` provides a read-only snapshot, not an externally mutable alias;
@@ -99,16 +107,16 @@ State acquisition and state acceptance are different responsibilities.
 
 ```text
 Device packets
-    -> RobotHardware: decode, map, offset, sign, unit conversion
+    -> hardware adapter: decode, map, offset, sign, unit conversion
     -> RobotState candidate in domain units
-    -> RobotSystem: validate model/state contract
+    -> trusted-state boundary: validate model/state contract
     -> atomically commit RobotState
     -> update state-bound model cache if applicable
 ```
 
-`RobotHardware` owns vendor communication and conversion from device
-representation. `RobotSystem` owns whether the resulting domain observation is
-a valid controller-facing state for the configured robot model.
+The hardware adapter owns vendor communication and conversion from device
+representation. The trusted-state boundary owns whether the resulting domain
+observation is a valid controller-facing state for the configured robot model.
 
 The runtime makes the cycle order visible:
 
@@ -131,8 +139,8 @@ Do not hide device reads, planning, control, and command transmission inside
 
 ## Model and State Coherence
 
-When `RobotSystem` owns state-dependent kinematics or dynamics data, the model
-cache and `RobotState` must describe the same accepted snapshot.
+When the trusted-state boundary owns state-dependent kinematics or dynamics
+data, the model cache and `RobotState` must describe the same accepted snapshot.
 
 - Update the cache only from an accepted state.
 - Do not publish the new state before its required cache is ready.
@@ -144,13 +152,13 @@ cache and `RobotState` must describe the same accepted snapshot.
   explicit, especially for floating-base systems.
 
 If model calculations have independent workspaces or different update rates,
-separate `RobotModel` from `RobotSystem` rather than weakening state coherence.
-The controller should still receive one clear current-state snapshot.
+separate the model service from the state owner rather than weakening state
+coherence. The controller should still receive one clear current-state snapshot.
 
 ## Live State Versus Hypothetical State
 
 Optimization, MPC, simulation, and rollout code often evaluate hypothetical
-states. These must not overwrite the live `RobotState` stored by `RobotSystem`.
+states. These must not overwrite the accepted live `RobotState`.
 
 Use one of the following:
 
@@ -161,7 +169,7 @@ Use one of the following:
 Keep the distinction visible:
 
 ```text
-RobotSystem state       = accepted live robot snapshot
+accepted live state     = trusted robot snapshot
 Rollout state           = hypothetical planning or optimization sample
 Simulator internal state = backend-owned simulation state
 ```
@@ -173,16 +181,16 @@ must not call `updateState()` merely to evaluate a candidate configuration.
 
 | Component | Owns | Must not own |
 | --- | --- | --- |
-| `RobotHardware` | device I/O, decoding, actuator mapping, raw-to-domain conversion | controller policy or authoritative model validation |
-| `RobotSystem` | accepted `RobotState`, robot-state contract, state/model coherence | controller, FSM, planner, device transport, goals, references |
+| hardware adapter | device I/O, decoding, actuator mapping, raw-to-domain conversion | controller policy or authoritative model validation |
+| trusted-state boundary | accepted `RobotState`, robot-state contract, state/model coherence | controller, FSM, planner, device transport, goals, references |
 | `RobotModel` | fixed model, kinematics/dynamics operations, required workspaces | hardware communication or system mode |
 | estimator | estimate generation and estimator history | unrestricted mutation of stored robot state |
 | controller | state/reference-to-command policy and controller history | acquisition, state ownership, command transmission |
 | runtime | lifecycle, call order, and failure routing | model math or hidden state mutation |
 
-Do not pass `RobotSystem&` everywhere as a service locator. A component that only
-needs state should receive `RobotState`. A component that needs model operations
-should depend on the narrow model contract it actually uses.
+Do not pass a trusted-state object everywhere as a service locator. A component
+that only needs state should receive `RobotState`. A component that needs model
+operations should depend on the narrow model contract it actually uses.
 
 ## Failure and Freshness
 
@@ -208,7 +216,7 @@ status, or activation precondition.
 
 ## Design Checklist
 
-Before accepting a `RobotSystem` design, verify:
+Before accepting a trusted-state design, verify:
 
 1. Is its primary role to own and expose controller-facing robot state?
 2. Does every live-state write cross one validation and commit boundary?
@@ -219,5 +227,5 @@ Before accepting a `RobotSystem` design, verify:
 7. Are hypothetical rollout states isolated from live robot state?
 8. Can stale or rejected updates be distinguished from fresh accepted state?
 9. Does `getState()` avoid exposing internally mutable state?
-10. Has `RobotSystem` avoided becoming a controller, planner, FSM, hardware
+10. Has the boundary avoided becoming a controller, planner, FSM, hardware
     manager, or generic dependency container?

@@ -10,10 +10,11 @@ code direction and reproducible build knowledge, not session history.
 
 ## Workflow
 
-1. Read the closest `AGENTS.md`, `docs/ARCHITECTURE.md`, and
-   `docs/COMMANDS.md` when present.
-2. Compare their claims with source layout, build files, scripts, configuration,
-   tests, and observed behavior.
+1. Read the closest `AGENTS.md`. Read only the authoritative documents touched
+   by the request: `docs/ARCHITECTURE.md` for code direction and
+   `docs/COMMANDS.md` for compilation or build locations.
+2. Compare the relevant claims with source layout, build files, scripts,
+   configuration, tests, and observed behavior.
 3. Classify each gap as stale, missing, duplicated, misplaced, or unverifiable.
 4. Update the smallest authoritative document for the knowledge.
 5. Verify paths and commands when practical. Never label an unexecuted command as
@@ -27,9 +28,9 @@ requests Doxygen, API documentation, or documentation comments. Do not add it as
 an automatic follow-up to normal documentation gardening or implementation.
 
 When this mode is requested, read [references/doxygen.md](references/doxygen.md)
-and only that additional reference. Preserve the repository's established
-comment syntax and document contracts at declarations without duplicating the
-same prose at definitions. Do not change program behavior while documenting it.
+as the only skill reference. Preserve the repository's established comment
+syntax and document contracts at declarations without duplicating the same
+prose at definitions. Do not change program behavior while documenting it.
 
 ## What To Maintain
 

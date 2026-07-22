@@ -4,6 +4,10 @@ Make runtime ownership, data movement, and execution order explicit without
 exposing subsystem internals. Keep ROS 2 as an integration layer around
 ROS-independent C++ control and hardware cores.
 
+The class and member names below are illustrative. Preserve established local
+names and collapse layers that do not represent a real ownership, middleware,
+hardware, or timing boundary.
+
 ## Contents
 
 - [Design Philosophy](#design-philosophy)
@@ -28,7 +32,7 @@ Let each layer fully own its domain and delegate through a narrow,
 intention-level contract.
 
 ```text
-Controller trusts RobotSystem for coherent controller-facing state.
+Controller trusts the accepted-state boundary for coherent controller-facing state.
 ROS 2 hardware interface trusts RobotHardware for hardware orchestration.
 RobotHardware trusts Actuator and LowIO for their local contracts.
 ```
@@ -45,9 +49,9 @@ Assign each runtime responsibility and mutable datum to one owner.
 | Component | Owns |
 | --- | --- |
 | ROS 2 controller wrapper | loaned interfaces, ROS lifecycle, and adaptation to control-domain types |
-| ROS-independent control core | `RobotSystem`, FSM, planners, controllers, trajectories, and control-cycle policy |
-| `RobotSystem` | latest accepted, coherent `RobotState` used by the control core |
-| ROS 2 hardware interface | ROS-facing state, sensor, and command storage plus `RobotHardware hand_` |
+| ROS-independent control core | trusted state, FSM, planners, controllers, trajectories, and control-cycle policy |
+| trusted-state boundary | latest accepted, coherent `RobotState` used by the control core when a separate owner is needed |
+| ROS 2 hardware interface | ROS-facing state, sensor, and command storage plus the robot hardware adapter |
 | `RobotHardware` | hardware-subsystem orchestration, `LowIO`, actuators, mapping, watchdog, and local fault handling |
 | `Actuator` | actuator state, actuator-specific conversion and limits, and transmitted-command bookkeeping |
 | `LowIO` | transport and protocol details |
@@ -64,10 +68,10 @@ Implement control decisions and hardware behavior as ROS-independent C++.
 ```text
 ROS 2 controller wrapper
     -> ROS-independent control core
-       -> RobotSystem, FSM, planners, controllers
+       -> trusted state, FSM, planners, controllers
 
 ROS 2 hardware interface
-    -> RobotHardware hand_
+    -> RobotHardware instance
        -> LowIO and actuators
 ```
 
@@ -99,7 +103,7 @@ It must not implement control laws, FSM transitions, planning, CAN or serial
 packets, actuator conversion, watchdog behavior, communication recovery, or
 hardware safety policy.
 
-A useful review test is:
+A useful boundary check is:
 
 > Removing ROS 2 should require replacing the wrappers, not rewriting control
 > or hardware behavior.
@@ -119,7 +123,7 @@ read()
 
 controller update()
   controller wrapper builds one complete RobotState candidate
-  control core validates and commits it to RobotSystem
+  control core validates and commits it at the trusted-state boundary
   active FSM/controller computes one RobotCommand from one snapshot
   controller wrapper writes the result to command interfaces
 
@@ -144,16 +148,16 @@ Actuators and sensors
     -> ROS 2 hardware-interface state storage
     -> loaned ROS 2 state interfaces
     -> complete RobotState candidate
-    -> RobotSystem validation and commit
+    -> trusted-state validation and commit
     -> coherent RobotState snapshot
     -> FSM, planner, and controller
 ```
 
 `RobotHardware` determines how packets, encoder values, signs, offsets, units,
 and joint-to-actuator mappings become hardware-domain state. The ROS 2 hardware
-interface only adapts that state to exported interfaces. `RobotSystem`
-determines whether the completed robot-domain state satisfies the configured
-model and controller-facing contract.
+interface only adapts that state to exported interfaces. The selected
+trusted-state boundary determines whether the completed robot-domain state
+satisfies the configured model and controller-facing contract.
 
 Do not make partial updates to the authoritative state. Build a complete
 candidate and commit it only after validation succeeds. See `robot-system.md`
@@ -198,8 +202,8 @@ FSM and controller RobotCommand
     -> actuators and LowIO
 ```
 
-`RobotSystem` owns state, not hardware commands. Do not add command storage or a
-`setCommand()` API to it.
+The trusted-state boundary owns state, not hardware commands. If that boundary
+is named `RobotSystem`, do not add command storage or a `setCommand()` API to it.
 
 Do not introduce public lifecycle representations such as candidate, accepted,
 finalized, limited, and sent commands. Validation, limiting, and device
@@ -223,7 +227,7 @@ class HandHardwareInterface
     : public hardware_interface::SystemInterface
 {
 private:
-  RobotHardware hand_;
+  RobotHardware hardware_;
 
   // ROS 2 joint-state interface storage
   std::vector<double> joint_position_;
@@ -245,17 +249,17 @@ The exact containers and export API depend on the `ros2_control` version, but
 the ownership rule does not. These values are adapter-side interface storage;
 they must not become the internal data model of `RobotHardware`.
 
-During `read()`, update `RobotHardware` first and then copy its domain state to
+During `read()`, update the hardware adapter first and then copy its domain state to
 the ROS-facing storage:
 
 ```cpp
 hardware_interface::return_type HandHardwareInterface::read(...)
 {
-  if (!hand_.read().ok()) {
+  if (!hardware_.read().ok()) {
     return hardware_interface::return_type::ERROR;
   }
 
-  copyToRosStateStorage(hand_.getState());
+  copyToRosStateStorage(hardware_.getState());
   return hardware_interface::return_type::OK;
 }
 ```
@@ -269,13 +273,13 @@ hardware_interface::return_type HandHardwareInterface::write(...)
   const JointImpedanceCommand command =
       buildJointImpedanceCommandFromRosStorage();
 
-  return hand_.setJointImpedance(command).ok()
+  return hardware_.setJointImpedance(command).ok()
       ? hardware_interface::return_type::OK
       : hardware_interface::return_type::ERROR;
 }
 ```
 
-ROS-facing storage, `HardwareState`, and `RobotSystem` state do
+ROS-facing storage, `HardwareState`, and trusted controller-facing state do
 not compete as authoritative copies. Each belongs to a different boundary:
 
 - `HardwareState` is the hardware subsystem's latest domain state;
@@ -284,15 +288,15 @@ not compete as authoritative copies. Each belongs to a different boundary:
 
 ## Hardware Orchestration
 
-Let the ROS 2 hardware interface exclusively own one `RobotHardware` object for
-the complete hardware subsystem. Name the instance after the subsystem.
+Let the ROS 2 hardware interface exclusively own the hardware adapter for the
+complete hardware subsystem. Name its type and instance for the local domain.
 
 ```cpp
 class HandHardwareInterface
     : public hardware_interface::SystemInterface
 {
 private:
-  RobotHardware hand_;
+  RobotHardware hardware_;
 };
 ```
 
@@ -368,7 +372,7 @@ as a normal transition.
 Handle a failure at the narrowest layer that has enough information and
 authority to own the response.
 
-- `RobotSystem` rejects invalid state candidates without partially modifying
+- the trusted-state boundary rejects invalid candidates without partially modifying
   the accepted state.
 - The control core decides whether rejected or stale state means hold, Idle,
   fault, or controller deactivation.
@@ -431,7 +435,7 @@ Avoid designs in which:
   safety behavior;
 - ROS-facing `std::vector<double>` storage becomes the hardware core's domain
   model;
-- `RobotSystem` stores or validates hardware commands;
+- the trusted-state boundary stores or validates hardware commands;
 - several consumers independently retrieve live state in one cycle;
 - `RobotHardware` exposes mutable actuators or transport objects;
 - a caller manually drives another owner's watchdog or retry mechanism;
@@ -448,7 +452,7 @@ Before accepting a runtime design, verify:
 4. Do ROS 2 wrappers only adapt interfaces, lifecycle, time, and status?
 5. Does the ROS 2 hardware interface own ROS-facing storage separately from
    `RobotHardware` state?
-6. Does the ROS 2 hardware interface exclusively own `RobotHardware hand_`?
+6. Does the ROS 2 hardware interface exclusively own its hardware adapter?
 7. Does `RobotHardware` own and coordinate `LowIO` and its actuators?
 8. Do public hardware APIs express joint intent rather than device mechanism?
 9. Are watchdog, communication, conversion, limiting, and transmitted-command

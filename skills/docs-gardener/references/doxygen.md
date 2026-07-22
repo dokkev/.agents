@@ -17,6 +17,9 @@ Doxygen-style API documentation.
 5. Place the authoritative contract at the declaration, normally in the header.
    Do not copy the same documentation to the definition.
 
+Do not run Doxygen, change a `Doxyfile`, or add a documentation build target
+unless the user also requests validation or documentation-tool setup.
+
 ## Useful Contract Content
 
 Document only details that callers or maintainers need:
@@ -56,19 +59,20 @@ Omit empty or redundant sections.
 /**
  * @brief Computes the commanded joint torque for one control cycle.
  *
- * This function performs no dynamic allocation and is safe to call from the
- * real-time control thread after initialization.
- *
- * @param q Joint positions in model order, in radians.
- * @param qdot Joint velocities in model order, in radians per second.
- * @return Commanded joint-side torque in newton-meters.
- * @pre `q.size()` and `qdot.size()` equal the model velocity dimension.
+ * @param state Accepted state in model order and canonical joint-side SI units.
+ * @param[out] tau_cmd Caller-owned joint-side torque storage, in newton-meters.
+ * @retval UpdateStatus::kOk `tau_cmd` contains a complete command.
+ * @retval UpdateStatus::kInvalidState `state` violates the controller contract;
+ *         `tau_cmd` is unchanged.
+ * @pre `tau_cmd.size()` equals the configured actuated-joint dimension.
  */
-Eigen::VectorXd computeTorque(
-    const Eigen::Ref<const Eigen::VectorXd>& q,
-    const Eigen::Ref<const Eigen::VectorXd>& qdot);
+UpdateStatus ComputeTorque(
+    const RobotState& state,
+    Eigen::Ref<Eigen::VectorXd> tau_cmd);
 ```
 
 Use the example as a quality bar, not a mandatory template. Short accessors may
 need no comment, while stateful, numerical, concurrent, or hardware-facing APIs
-may require more precise contracts.
+may require more precise contracts. Claim allocation-free, non-blocking, thread-
+safe, or real-time behavior only when the implementation and lifecycle actually
+establish that guarantee.

@@ -1,7 +1,6 @@
 # Control Concurrency
 
-Loading this reference does not authorize tests or review. Use its Verification
-and Review Rules sections only when the user explicitly requests those modes.
+Loading this reference does not authorize tests, validation, or review.
 
 Use this standard when control code crosses execution contexts, including ROS 2
 callbacks, hardware I/O threads, real-time loops, background diagnostics, or
@@ -26,8 +25,6 @@ touches those concerns.
 - [Design Overload and Failure Behavior](#design-overload-and-failure-behavior)
 - [Keep the Real-Time Path Bounded](#keep-the-real-time-path-bounded)
 - [Avoid Custom Concurrency Primitives](#avoid-custom-concurrency-primitives)
-- [Verification](#verification)
-- [Review Rules](#review-rules)
 
 ## Core Philosophy
 
@@ -122,33 +119,26 @@ Synchronization, slot selection, pointer swapping, and buffer lifetime are
 implementation details. Expose a domain-level contract to the control law.
 
 ```cpp
-const RobotState& state = robot.GetState();
-RobotCommand& command = robot.GetCommand();
+const RobotState& state = state_source.GetSnapshot();
 
 if (!state.valid || state.age > maximum_state_age) {
-  robot.SetSafeCommand();
-  robot.SendCommand();
+  command_channel.Publish(BuildSafeCommand());
   return UpdateStatus::kStateUnavailable;
 }
 
-command.tau = ComputeTorque(state, reference);
-robot.SendCommand();
+const RobotCommand command = controller.ComputeCommand(state, reference);
+command_channel.Publish(command);
 ```
 
 In this example:
 
-- `GetState()` acquires the latest complete state into stable control-thread
+- `GetSnapshot()` acquires the latest complete state into stable control-thread
   storage without allocation or indefinite waiting;
 - the returned `const RobotState&` remains stable for the documented cycle or
   accessor lifetime;
-- `GetCommand()` returns the writable next-command object owned by the control
-  thread;
-- `SendCommand()` validates and publishes one complete command;
+- the controller produces one caller-owned complete command;
+- `Publish()` transfers an immutable snapshot according to the channel contract;
 - the hardware or transport context cannot observe a partially written command.
-
-`GetCommand()` is acceptable when the project contract clearly says it returns
-the writable next command. If that meaning is not locally established, use a
-name such as `MutableCommand()`.
 
 Do not expose code like this in the control law:
 
@@ -340,44 +330,11 @@ A custom primitive requires all of the following:
 2. the missing requirement is documented;
 3. the user approves the custom concurrency work;
 4. ownership, lifetime, ordering, and memory-model assumptions are documented;
-5. execution, allocation, overflow, race, and shutdown behavior are tested.
+5. execution, allocation, overflow, race, and shutdown behavior have explicit
+   evidence appropriate to the requirement.
 
 Do not replace a small understandable mutex-protected non-real-time section with
 custom lock-free code merely to remove the word `mutex`.
 
-## Verification
-
-Verify concurrency behavior at the level of its contract:
-
-- a reader never observes a partially written snapshot;
-- one cycle uses one version of each input;
-- stale, duplicate, missing, and overflow cases produce the defined status;
-- callbacks do not modify controller-owned history;
-- shutdown and restart do not race with object destruction;
-- the real-time path does not allocate or wait indefinitely;
-- ThreadSanitizer or an equivalent race detector covers non-real-time testable
-  paths when practical;
-- stress tests run producers and consumers at mismatched rates;
-- ROS tests exercise best-effort acquisition failure and queue overflow where
-  those outcomes are possible.
-
-Do not claim hard real-time behavior from code inspection alone. Measure timing
-and allocation behavior on the relevant path when the requirement matters.
-
-## Review Rules
-
-Flag code that:
-
-- introduces concurrency without a user request or real execution boundary;
-- creates a custom thread for work already owned by a ROS 2 executor;
-- exposes buffers, locks, or slot mechanics in the control law;
-- shares mutable vectors, messages, or controller history across contexts;
-- reads shared inputs repeatedly during one control update;
-- lacks explicit latest-value, ordered-event, or latched-state semantics;
-- omits timestamp, sequence, stale, or overflow handling when freshness matters;
-- blocks, allocates, spins, or retries without a bound on the real-time path;
-- uses a lock-free container without a lifetime and overflow contract;
-- creates a custom primitive without documented need and user approval.
-
-Do not recommend concurrency merely as a possible performance improvement.
-Require a measured problem and an explicit execution contract.
+Do not claim hard real-time behavior from code inspection alone. Measurement or
+validation belongs to an explicitly requested Validate mode.

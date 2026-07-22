@@ -1,7 +1,6 @@
 # Control Loop Implementation
 
-Loading this reference does not authorize tests, validation, or review. Use its
-Verification and Review Rules sections only in explicitly requested modes.
+Loading this reference does not authorize tests, validation, or review.
 
 Use this standard for repeated control, estimation, planning, simulation, and
 hardware-interface update loops, especially in real-time or high-frequency
@@ -25,8 +24,6 @@ history or elapsed time.
 - [Keep Diagnostics Outside the Critical Path](#keep-diagnostics-outside-the-critical-path)
 - [Keep Execution Bounded](#keep-execution-bounded)
 - [Handle Failures by Contract](#handle-failures-by-contract)
-- [Verification](#verification)
-- [Review Rules](#review-rules)
 
 ## Core Principle
 
@@ -386,34 +383,3 @@ Define recovery explicitly:
 
 Bound retries and escalation. Repeated transient failures must not create an
 infinite retry loop or indefinite operation in an undocumented degraded mode.
-
-## Verification
-
-Verify fixed contracts with initialization tests and malformed-input tests at
-adapter boundaries. Verify loop behavior with deterministic state/reference
-examples, failure-path tests, and safe offline or simulated execution. Confirm
-that every early return writes the expected fallback and that recovery resets
-stateful numerical components as specified.
-
-For strict no-allocation loops, use an allocation detector, Eigen runtime malloc
-guard, or equivalent test when supported by the project. Do not claim the loop
-is allocation-free based only on visual inspection.
-
-## Review Rules
-
-Flag repeated-path code when it:
-
-- validates fixed dimensions or configuration every cycle;
-- resizes owned storage after successful initialization;
-- performs avoidable dynamic allocation or formatting;
-- resolves names, frames, parameters, or mappings repeatedly;
-- performs blocking or unbounded work;
-- removes a changing runtime safety check in the name of performance;
-- mixes untrusted external data directly into the control law;
-- can return with a stale, partial, non-finite, or failed-solver command;
-- treats hold-last-command behavior as an implicit fallback;
-- lacks a defined safe policy, recovery condition, or fault escalation rule;
-- hides the mathematical loop behind generic helpers.
-
-Require evidence before recommending micro-optimization. Prioritize stable
-memory behavior, bounded execution, safety, and readable data flow.

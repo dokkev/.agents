@@ -93,7 +93,7 @@ A dedicated `*_interfaces` package is appropriate when messages, services, or
 actions form a stable contract shared across multiple packages.
 
 ```text
-clear_hand_interfaces/
+robot_interfaces/
 ├── msg/
 ├── srv/
 └── action/

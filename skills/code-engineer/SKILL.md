@@ -80,18 +80,21 @@ list.
 
 | Trigger in the requested work | Read |
 | --- | --- |
-| non-trivial robotics/control C++, hardware, protocol, or performance-sensitive code whose main flow or ownership is hard to see | `references/robot-control-readability.md` |
 | control variable names, physical quantities, pipeline stages, or public control data | `references/control-variable-naming.md` |
 | units, frames, transforms, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
 | function decomposition, helper boundaries, mutation, outputs, status handling, or Eigen lifetime | `references/control-function-implementation.md` |
 | YAML, `yaml-cpp`, controller gains, FSM parameters, limits, thresholds, or timeouts | `references/yaml-configuration.md` |
-| stored `RobotCommand` access, replacement, limiting, sending, or sent-command bookkeeping | `references/robot-command-access.md` |
+| controller-to-hardware `RobotCommand` handoff, validation, limiting, transmission, or applied-command diagnostics | `references/hardware-command-boundary.md` |
 | `Update()`, `Step()`, high-frequency callbacks, preallocation, fallback, or command publication | `references/control-loop-implementation.md` |
 | linear algebra, geometry, manifolds, optimization, tolerances, normalization, regularization, or Eigen expressions | `references/control-numerical-implementation.md` |
 | threads, ROS callbacks, real-time/non-real-time handoff, shared state, queues, or asynchronous publication | `references/control-concurrency.md` |
 | `dt`, integrators, derivatives, filters, rate/jerk limits, timeouts, history, mode transitions, multi-rate logic, or warm starts | `references/control-discrete-time-implementation.md` |
 | explicit code-review request | `references/review.md` plus only the concern references needed for supported findings |
 | explicit test design, test implementation, build, test run, smoke check, or validation request | `references/testing.md` |
+
+For a reference longer than 100 lines, preview its `Contents` first and read
+only the sections relevant to the requested change. Read the full file only
+when the task genuinely crosses most of its concerns.
 
 ## Implement Mode
 
@@ -108,6 +111,12 @@ Prioritize:
 Prefer direct code and established libraries. Add a helper, class, or utility
 only when it represents a real domain operation, isolates mechanical detail,
 improves safety, or removes meaningful duplication.
+
+Follow the established local C++ style. Keep lifecycle and control functions
+readable as a top-level story, preserve the visible mathematical flow, and use
+precise helper names for mechanical details and side effects. Do not impose a
+repo-wide separator, helper package, or formatting convention that the
+repository has not adopted.
 
 Do not broaden a local change into package reorganization, public API redesign,
 new concurrency, or a generic framework. Surface architectural pressure instead

@@ -4,6 +4,15 @@ Load this reference only when the user explicitly asks to design or add tests,
 run tests, compile, validate, or perform a smoke check. Do not use it as an
 automatic follow-up to implementation or review.
 
+## Contents
+
+- [Match The Requested Scope](#match-the-requested-scope)
+- [Context](#context)
+- [Test Design](#test-design)
+- [Concern Matrix](#concern-matrix)
+- [Validation Selection](#validation-selection)
+- [Reporting](#reporting)
+
 ## Match The Requested Scope
 
 | Request | Action |
@@ -56,6 +65,25 @@ chase coverage percentage at the expense of useful assertions.
 For hardware-facing code, prefer deterministic protocol tests, fake hardware,
 simulation, dry-run, log replay, or disabled motors. Use real hardware only when
 the user explicitly requests it and the safety boundary is clear.
+
+## Concern Matrix
+
+Select cases from only the concerns in the user's requested test scope.
+
+| Concern | High-value cases |
+| --- | --- |
+| data conventions | zero/sign/scale, saturation, encode/decode round trip, non-identity ordering, motor/joint conversion, frame and quaternion variants |
+| numerical code | nominal expected output, near-zero and wrap boundaries, singular/rank-deficient input, solver failure, non-finite rejection, scale-aware tolerance |
+| repeated loop | initialization contract, malformed boundary input, every early-return fallback, recovery reset, allocation guard when no-allocation is claimed |
+| discrete time | first update, invalid or excessive `dt`, missed cycle, integrator saturation/anti-windup, filter reset, bumpless transition, warm-start invalidation, rate change |
+| concurrency | complete snapshots, mismatched producer/consumer rates, stale/duplicate/overflow behavior, shutdown lifetime, race detector where practical |
+| command boundary | structural rejection, atomic handoff, hardware limiting, send failure, transmitted-command diagnostic, no partial application |
+| FSM | entry/re-entry/exit order, transition commit boundary, self/invalid/failure transition, complete output on failure |
+| YAML | missing key, wrong type/shape, non-finite or unsafe value, contextual error, atomic live replacement |
+
+Derive expected values and tolerances independently from the implementation
+when practical. A test that checks only that output is finite is not a numerical
+correctness test.
 
 ## Validation Selection
 
