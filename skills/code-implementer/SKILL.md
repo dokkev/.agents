@@ -57,6 +57,7 @@ Read the files whose trigger matches the change.
 | naming control variables, physical quantities, pipeline stages, or public control data | `references/control-variable-naming.md` |
 | touching units, frames, transforms, spatial ordering, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
 | implementing or refactoring a control/math function, helper boundary, ownership contract, mutation, output, or status API | `references/control-function-implementation.md` |
+| implementing stored `RobotCommand` access, validation, replacement, limiting, or transmission through `getCommand()`, `setCommand()`, `sendCommand()`, or `getSentCommand()` | `references/robot-command-access.md` |
 | changing `Update()`, `Step()`, a high-frequency callback, initialization/runtime validation, preallocation, fallback, or command publication | `references/control-loop-implementation.md` |
 | using linear algebra, geometry, manifolds, optimization, tolerances, normalization, regularization, or Eigen expressions | `references/control-numerical-implementation.md` |
 | crossing threads, ROS callbacks, real-time/non-real-time contexts, shared state, queues, or asynchronous publishing | `references/control-concurrency.md` |
@@ -101,8 +102,9 @@ prefer the established `realtime_tools` primitive whose semantics match the
 channel.
 
 Hide synchronization and buffer mechanics behind domain accessors such as
-`GetState()`, `GetCommand()`, and `SendCommand()`. Keep freshness, validity, and
-fallback decisions visible to the control loop.
+`getState()`, `getCommand()`, `setCommand()`, and `sendCommand()`. Keep
+freshness, validity, command acceptance, and fallback decisions visible to the
+control loop.
 
 Do not implement synchronization, double buffering, or a lock-free queue from
 scratch unless existing libraries are demonstrably insufficient and the user
