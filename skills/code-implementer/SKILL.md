@@ -57,6 +57,7 @@ Read the files whose trigger matches the change.
 | naming control variables, physical quantities, pipeline stages, or public control data | `references/control-variable-naming.md` |
 | touching units, frames, transforms, spatial ordering, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
 | implementing or refactoring a control/math function, helper boundary, ownership contract, mutation, output, or status API | `references/control-function-implementation.md` |
+| adding or changing YAML configuration, `yaml-cpp` parsing, controller gains, FSM parameters, limits, timeouts, or other runtime settings | `references/yaml-configuration.md` |
 | implementing stored `RobotCommand` access, validation, replacement, limiting, or transmission through `getCommand()`, `setCommand()`, `sendCommand()`, or `getSentCommand()` | `references/robot-command-access.md` |
 | changing `Update()`, `Step()`, a high-frequency callback, initialization/runtime validation, preallocation, fallback, or command publication | `references/control-loop-implementation.md` |
 | using linear algebra, geometry, manifolds, optimization, tolerances, normalization, regularization, or Eigen expressions | `references/control-numerical-implementation.md` |
