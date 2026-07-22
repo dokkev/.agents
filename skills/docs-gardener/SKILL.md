@@ -1,6 +1,6 @@
 ---
 name: docs-gardener
-description: Maintain a small, accurate repository harness centered on AGENTS.md, docs/ARCHITECTURE.md, and docs/COMMANDS.md. Use when the user asks to document code direction, ownership, dependencies, runtime flow, compilation commands, source/build/install locations, repo-specific agent guidance, stale documentation, or a minimal harness for a repository.
+description: Maintain a small, accurate repository harness centered on AGENTS.md, docs/ARCHITECTURE.md, and docs/COMMANDS.md, and create Doxygen-style API documentation when explicitly requested. Use when the user asks to document code direction, ownership, dependencies, runtime flow, compilation commands, source/build/install locations, repo-specific agent guidance, stale documentation, a minimal harness, or Doxygen comments for a repository.
 ---
 
 # Docs Gardener
@@ -19,6 +19,17 @@ code direction and reproducible build knowledge, not session history.
 5. Verify paths and commands when practical. Never label an unexecuted command as
    verified.
 6. Remove obsolete guidance instead of preserving it as history.
+
+## Requested API Documentation
+
+Create or revise Doxygen-style code documentation only when the user explicitly
+requests Doxygen, API documentation, or documentation comments. Do not add it as
+an automatic follow-up to normal documentation gardening or implementation.
+
+When this mode is requested, read [references/doxygen.md](references/doxygen.md)
+and only that additional reference. Preserve the repository's established
+comment syntax and document contracts at declarations without duplicating the
+same prose at definitions. Do not change program behavior while documenting it.
 
 ## What To Maintain
 
@@ -113,3 +124,5 @@ Remaining documentation gaps:
 - Do not update docs for every implementation diff. Update them when code
   direction, a public boundary, ownership, dependency flow, or the compilation
   procedure changes.
+- Do not add Doxygen comments unless the user explicitly requests API or
+  Doxygen-style documentation.

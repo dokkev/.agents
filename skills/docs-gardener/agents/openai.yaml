@@ -1,4 +1,4 @@
 interface:
   display_name: "Docs Gardener"
-  short_description: "Maintain the minimal repository harness"
-  default_prompt: "Use $docs-gardener to align AGENTS.md, ARCHITECTURE.md, and COMMANDS.md with the repository."
+  short_description: "Maintain repo docs and requested Doxygen APIs"
+  default_prompt: "Use $docs-gardener to align repository documentation or create requested Doxygen API comments."
