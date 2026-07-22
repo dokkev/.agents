@@ -10,10 +10,12 @@ also apply.
 
 - [Core Principle](#core-principle)
 - [Keep Core Logic Visible](#keep-core-logic-visible)
+- [Name Functions by Observable Behavior](#name-functions-by-observable-behavior)
 - [Helper Boundary](#helper-boundary)
 - [Equation Comments](#equation-comments)
 - [Reading Locality](#reading-locality)
 - [Structure Longer Functions with Sections](#structure-longer-functions-with-sections)
+- [Make Ownership and Data Flow Explicit](#make-ownership-and-data-flow-explicit)
 - [Make Mutation and Side Effects Visible](#make-mutation-and-side-effects-visible)
 - [Review Rules](#review-rules)
 
@@ -56,6 +58,10 @@ bool Controller::Update()
 
 Prefer code that presents the mathematical story directly.
 
+The example below assumes Euclidean actuated-joint coordinates. Use the model's
+manifold difference operation when `q` contains a floating base or another
+non-Euclidean joint.
+
 ```cpp
 bool Controller::Update(
     const RobotState& state,
@@ -63,13 +69,13 @@ bool Controller::Update(
     RobotCommand* command)
 {
   // e_q = q_des - q
-  q_error_.noalias() = reference.q - state.q;
+  q_error_ = reference.q - state.q;
 
   // e_qdot = qdot_des - qdot
-  qdot_error_.noalias() = reference.qdot - state.qdot;
+  qdot_error_ = reference.qdot - state.qdot;
 
   // tau = Kp e_q + Kd e_qdot + tau_ff
-  command->tau.noalias() =
+  command->tau =
       gains_.kp.cwiseProduct(q_error_)
       + gains_.kd.cwiseProduct(qdot_error_)
       + reference.tau_ff;
@@ -78,6 +84,57 @@ bool Controller::Update(
   return true;
 }
 ```
+
+## Name Functions by Observable Behavior
+
+Use short lifecycle names when the class or interface supplies the context:
+
+```cpp
+Initialize();
+Reset();
+Start();
+Stop();
+Update();
+Read();
+Write();
+```
+
+For other functions, prefer a specific verb followed by the domain noun. Do not
+repeat the class name, narrate the full parameter list, or add `Internal`,
+`Impl`, or `Helper` merely to distinguish an implementation detail.
+
+```cpp
+// Avoid
+controller.ComputeControllerTorqueCommand(state, reference);
+ComputeEndEffectorPoseFromJointPositions(q);
+ProcessData();
+HandleInput();
+ComputeControlInternal();
+
+// Prefer
+controller.ComputeTorque(state, reference);
+ComputeEndEffectorPose(q);
+DecodeState(frame);
+ApplyCommandLimits(command);
+```
+
+Use verbs consistently:
+
+| Verb | Expected behavior |
+| --- | --- |
+| `Compute` | Calculate a result without changing persistent semantic state |
+| `Build` | Construct a value or problem description from inputs |
+| `Update` | Advance or refresh owned state or a cache |
+| `Apply` | Mutate the named target according to a rule |
+| `Set` | Replace an owned property or configuration value |
+| `Validate` | Inspect a contract without modifying the input |
+| `Encode` / `Decode` | Convert between representations |
+| `Read` / `Write` | Interact with a device or stateful interface |
+| `Publish` / `Send` | Produce an external communication side effect |
+
+Name Boolean queries with `Is`, `Has`, `Can`, or `Should` when it improves
+readability. A function name must not imply purity when it changes internal or
+external state.
 
 ## Helper Boundary
 
@@ -116,8 +173,8 @@ If yes, keep the logic visible at the call site.
 // Avoid: the control law is hidden.
 const Eigen::VectorXd tau = ComputeControlTorque(state, reference);
 
-// Prefer: the control law remains visible.
-const Eigen::VectorXd tau =
+// Prefer: the control law remains visible and uses preallocated command storage.
+command->tau =
     gains_.kp.cwiseProduct(reference.q - state.q)
     + gains_.kd.cwiseProduct(reference.qdot - state.qdot)
     + reference.tau_ff;
@@ -129,24 +186,34 @@ Place the corresponding equation immediately above non-trivial control,
 dynamics, estimation, or optimization code.
 
 ```cpp
-// e_x = x_des - x
-const Vector6d pose_error = reference.pose - state.pose;
+// e_p_W = p_W_des - p_W
+const Eigen::Vector3d position_error_W =
+    reference.position_W - state.position_W;
 
-// F = Kp e_x + Kd e_xdot
-const Vector6d wrench =
-    gains_.kp.cwiseProduct(pose_error)
-    + gains_.kd.cwiseProduct(velocity_error);
+// e_R_W = Log(R_WB_des R_WB^T), expressed in the world frame.
+const Eigen::Vector3d orientation_error_W =
+    LogRotation(reference.rotation_WB * state.rotation_WB.transpose());
 
-// tau = J^T F + g(q)
-command->tau.noalias() = jacobian.transpose() * wrench + gravity;
+// Task-vector ordering: [linear; angular], expressed in the world frame.
+Vector6d task_error_W;
+task_error_W << position_error_W, orientation_error_W;
+
+// wrench_W = Kp e_task_W + Kd e_twist_W
+const Vector6d wrench_W =
+    gains_.kp.cwiseProduct(task_error_W)
+    + gains_.kd.cwiseProduct(velocity_error_W);
+
+// tau = J_W^T wrench_W + g(q)
+command->tau.noalias() =
+    jacobian_W.transpose() * wrench_W + gravity;
 ```
 
 Document relevant frame, unit, sign, convention, and approximation assumptions.
 
 ```cpp
-// e_R = Log(R_des^T R), expressed in the local task frame.
-const Eigen::Vector3d orientation_error =
-    LogRotation(reference.rotation.transpose() * state.rotation);
+// e_R_B = Log(R_WB^T R_WB_des), expressed in the current body frame.
+const Eigen::Vector3d orientation_error_B =
+    LogRotation(state.rotation_WB.transpose() * reference.rotation_WB);
 ```
 
 Do not add comments that merely translate an obvious line into prose. Keep an
@@ -199,6 +266,52 @@ bool Controller::Update(...)
 Do not replace these sections with vague `Compute...()` or `Process...()`
 helpers when doing so would hide the important calculations.
 
+## Make Ownership and Data Flow Explicit
+
+Use function signatures to reveal which values are read, produced, and
+modified.
+
+- Pass read-only non-trivial inputs by `const&`.
+- Pass small scalar and enum values by value.
+- Return a value when the function naturally produces one result and the call is
+  not a preallocated repeated path.
+- Use an explicit non-owning output pointer for caller-owned storage that is
+  filled or modified, especially for reusable control-loop workspaces.
+- Return a status alongside an output pointer when failure is part of the
+  contract.
+- Use smart pointers only when ownership or lifetime is actually transferred or
+  shared. Do not use a raw pointer to imply ownership.
+
+```cpp
+Pose ComputePose(const Eigen::VectorXd& q);
+
+UpdateStatus Controller::Update(
+    const RobotState& state,
+    const TaskReference& reference,
+    RobotCommand* command);
+```
+
+An output pointer that is required by the contract must be non-null. Validate
+that contract outside a high-frequency path, or enforce it with the project's
+assertion or contract mechanism; do not add a redundant null check every cycle.
+
+Do not alias inputs and outputs unless the API is explicitly documented as an
+in-place operation. Do not reuse state or reference storage as command
+workspace. Views, spans, maps, and references must not outlive the storage they
+refer to.
+
+Avoid hidden ownership and hidden inputs:
+
+- no mutable global or thread-local control state;
+- no helper that reads an unrelated singleton or implicit current robot;
+- no silent replacement of caller-owned buffers;
+- no cached reference, pointer, or view without an explicit lifetime contract;
+- no semantic state mutation disguised as workspace reuse.
+
+Reusable scratch buffers may be members for allocation control, but they must
+not change the controller's mathematical behavior or become undocumented inputs
+to the next update.
+
 ## Make Mutation and Side Effects Visible
 
 Avoid helpers that silently change unrelated member state.
@@ -229,6 +342,9 @@ Flag code when:
 - helpers are thin wrappers with no meaningful contract;
 - a line-count target caused excessive fragmentation;
 - equations, frames, signs, or units are not recoverable from the code;
+- function names repeat class context, use vague verbs, or misrepresent side
+  effects;
+- ownership, output mutation, aliasing, or view lifetime is ambiguous;
 - important mutation or side effects are hidden;
 - low-level protocol or conversion detail overwhelms the main algorithm.
 
