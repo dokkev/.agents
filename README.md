@@ -61,6 +61,17 @@ $code-engineer Review this diff for numerical and concurrency issues.
 $docs-gardener Create the minimal repository harness.
 ```
 
+## Sub-agent execution
+
+Default to one agent. Delegate only bounded, independent work with an explicit
+mode, deliverable, and non-overlapping write ownership. Delegation does not
+expand the user's authority, and the parent agent remains responsible for
+integration and the final result.
+
+An agent may check and correct its own implementation, but that is not code
+review. Review or approval of production code requires a separate agent that
+did not author the reviewed code.
+
 ## Repository harness
 
 These global skills define reusable workflows. Each project keeps its own facts
