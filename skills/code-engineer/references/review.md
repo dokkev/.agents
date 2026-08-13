@@ -17,7 +17,12 @@ not trigger a separate review pass.
 ## Core Contract
 
 - Establish the exact diff, files, subsystem, or behavior under review.
-- Keep the review read-only unless the user also requests fixes.
+- Require a reviewer who did not author any reviewed production code. An
+  author's inspection and corrections are Implement work, not review or
+  approval.
+- Keep the reviewer read-only. Send separately requested fixes to an Implement
+  agent; the same non-author reviewer may re-check fixes it did not author.
+- If no independent reviewer is available, report that review was not performed.
 - Read only the concern references that match the reviewed code.
 - Treat `docs/ARCHITECTURE.md` as accepted direction, not unquestionable truth.
 - Do not turn implementation review into architecture redesign unless requested.

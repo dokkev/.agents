@@ -21,6 +21,13 @@ reproducible build knowledge, not session history.
    verified.
 6. Remove obsolete guidance instead of preserving it as history.
 
+## Sub-agent Delegation
+
+Default to one agent. Delegate independent evidence collection across
+non-overlapping sources with exact facts and paths to verify.
+Keep one editor per authoritative document; the parent verifies and integrates.
+Do not recursively delegate by default.
+
 For a Markdown document over 100 lines, list its H2 sections before reading it:
 
 ```bash
@@ -30,10 +37,9 @@ python3 "$DOCS_GARDENER_DIR/scripts/read_reference.py" docs/ARCHITECTURE.md \
   --section "Runtime Flow" --section "Hardware Boundary"
 ```
 
-Set `DOCS_GARDENER_DIR` to the directory containing this `SKILL.md`, then run
-from the target repo. Read the full document only to review/restructure it,
-reconcile three or more sections, or resolve cross-section conflicts. Read short
-docs in full.
+Set `DOCS_GARDENER_DIR` to this skill directory, then run from the target repo.
+Read the full document only to review or restructure it, reconcile several
+sections, or resolve cross-section conflicts.
 
 ## Requested API Documentation
 

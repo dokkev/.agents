@@ -27,6 +27,14 @@ importing production-scale infrastructure.
 Architecture work does not authorize implementation. When both are requested,
 preserve the approved design and local implementation standards.
 
+## Sub-agent Delegation
+
+Default to one agent. Delegate only bounded, independent inspection that needs
+no shared mutation or unresolved upstream decision. Give each sub-agent one
+question and read-only scope. Keep architecture synthesis, trade-offs, and final
+decisions with the parent. Do not duplicate investigations or recursively
+delegate by default.
+
 ## Load Context Progressively
 
 Start with zero references. Choose one primary reference for the dominant
