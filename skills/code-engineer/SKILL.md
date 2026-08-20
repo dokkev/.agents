@@ -75,6 +75,7 @@ heading-first rule to long repository docs. Safe repository contracts prevail.
 | control variable names, physical quantities, pipeline stages, or public control data | `references/control-variable-naming.md` |
 | units, frames, transforms, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
 | function decomposition, helper boundaries, mutation, outputs, status handling, or Eigen lifetime | `references/control-function-implementation.md` |
+| Python API/data modeling, dataclasses, tuple/dict usage, module structure, Python refactoring, PEP 20, or Python readability | `references/python-code-design.md` |
 | YAML, `yaml-cpp`, controller gains, FSM parameters, limits, thresholds, or timeouts | `references/yaml-configuration.md` |
 | controller-to-hardware `RobotCommand` handoff, hardware validation, limiting, transmission, or required hardware-owned command smoothing | `references/hardware-command-boundary.md` |
 | device or transport I/O, packets, reads/writes, retries, reconnects, or hidden blocking | `references/hardware-io.md` |
