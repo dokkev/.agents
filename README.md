@@ -48,8 +48,8 @@ git -C "$HOME/.local/share/dokkev-agents" pull --ff-only
 | Skill | Purpose |
 | --- | --- |
 | `architecture-designer` | Design ownership, dependencies, runtime flow, lifecycle, and ROS 2 or hardware boundaries before implementation. |
-| `code-engineer` | Implement, review, test, or validate code in the mode explicitly requested by the user. It selects only relevant references and does not automatically add tests or reviews. |
-| `docs-gardener` | Maintain a minimal repository harness and keep code direction and compilation knowledge accurate. |
+| `code-engineer` | Default skill for code-related implementation, review, test, and validation work in the requested mode. |
+| `docs-gardener` | Maintain a minimal repository harness and keep its architecture map and compilation knowledge accurate. |
 
 Codex can select a skill from the request automatically. In the CLI or IDE,
 invoke one explicitly with `$skill-name`:
@@ -68,9 +68,10 @@ mode, deliverable, and non-overlapping write ownership. Delegation does not
 expand the user's authority, and the parent agent remains responsible for
 integration and the final result.
 
-An agent may check and correct its own implementation, but that is not code
-review. Review or approval of production code requires a separate agent that
-did not author the reviewed code.
+Review independence is project-specific. A repository may allow self-review or
+require review by a separate non-author agent. Follow the closest repository
+instructions or explicit user request, and never describe self-review as
+independent review.
 
 ## Repository harness
 
@@ -79,9 +80,14 @@ in a small local harness:
 
 | File | Responsibility |
 | --- | --- |
-| `AGENTS.md` | Short repository-specific rules and links to authoritative documents. |
-| `docs/ARCHITECTURE.md` | Accepted code direction, ownership, dependencies, runtime flow, and public boundaries. |
+| `AGENTS.md` | Short repository-specific working rules and links to authoritative documents. |
+| `docs/ARCHITECTURE.md` | Navigational map of the current accepted codebase: canonical entry points, ownership, dependencies, runtime flow, public boundaries, and intentional absences. |
 | `docs/COMMANDS.md` | Source, build, install, and output locations plus exact compilation commands. |
+
+The architecture document is primarily a map of the code that currently exists.
+When a migration is incomplete, it should distinguish verified current structure
+from the accepted target rather than presenting proposed architecture as current
+reality.
 
 Ask `$docs-gardener` to create or maintain this harness for a project. It does
 not create `PLANS.md` or `DECISIONS.md` by default.
