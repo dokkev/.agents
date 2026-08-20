@@ -1,4 +1,4 @@
 interface:
   display_name: "Code Engineer"
-  short_description: "Implement or inspect code in the requested mode"
-  default_prompt: "Use $code-engineer for this code task. Preserve my requested scope, load only relevant references, and do not add tests or review unless I ask."
+  short_description: "Default workflow for any code task"
+  default_prompt: "Use $code-engineer for this code task. Select the requested Implement, Review, Test, or Validate mode, load only applicable language and domain references, and preserve my requested scope."
