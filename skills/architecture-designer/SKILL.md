@@ -11,9 +11,11 @@ importing production-scale infrastructure.
 
 ## Workflow
 
-1. Read the closest `AGENTS.md`. Read `docs/ARCHITECTURE.md` only for relevant
-   accepted direction; read `docs/COMMANDS.md` only when build or deployment
-   affects the design.
+1. Read the closest `AGENTS.md`. Read `docs/ARCHITECTURE.md` as the repository's
+   navigational map and current accepted architectural state: use it to locate
+   canonical entry points, ownership boundaries, dependencies, and runtime flow,
+   then verify the affected area against current source before proposing changes.
+   Read `docs/COMMANDS.md` only when build or deployment affects the design.
 2. Inspect the smallest relevant component graph, public types, runtime entry
    point, build targets, and executable contracts.
 3. State the problem and constraints; separate defects from optional changes.
@@ -26,6 +28,9 @@ importing production-scale infrastructure.
 
 Architecture work does not authorize implementation. When both are requested,
 preserve the approved design and local implementation standards.
+
+Do not present a proposed target architecture as current repository state. Keep
+verified current structure and proposed changes explicit when they differ.
 
 ## Sub-agent Delegation
 
@@ -91,3 +96,7 @@ contain `Core Contract`. Explicit safe repository contracts take precedence.
 Lead with the recommendation, then the needed flow, ownership, dependencies,
 lifecycle, failures, migration, rejected alternatives, and open decisions. Show
 package/header changes when relevant. Use a diagram only when materially clearer.
+
+When the proposal changes canonical entry points, package ownership, dependency
+direction, or runtime flow, identify which parts of `docs/ARCHITECTURE.md` should
+be updated after implementation so the repository map remains accurate.

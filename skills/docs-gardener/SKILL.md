@@ -11,8 +11,9 @@ reproducible build knowledge, not session history.
 ## Workflow
 
 1. Read the closest `AGENTS.md` and only the authoritative documents touched by
-   the request: `docs/ARCHITECTURE.md` for code direction and
-   `docs/COMMANDS.md` for compilation or build locations.
+   the request: `docs/ARCHITECTURE.md` as the repository's navigational map and
+   current accepted architectural state, and `docs/COMMANDS.md` for compilation
+   or build locations.
 2. Compare claims with relevant source, builds, scripts, config, tests, and
    observed behavior.
 3. Classify each gap as stale, missing, duplicated, misplaced, or unverifiable.
@@ -52,11 +53,12 @@ declarations, avoid duplicate prose at definitions, and do not change behavior.
 
 ## What To Maintain
 
-- `AGENTS.md`: short repo-specific rules, entry points, and links to authoritative
+- `AGENTS.md`: short repo-specific working rules and links to authoritative
   documents.
-- `docs/ARCHITECTURE.md`: accepted direction, responsibility, ownership,
-  dependencies, runtime flow, and public boundaries; distinguish current and
-  target structure during migration.
+- `docs/ARCHITECTURE.md`: navigational map of the current accepted codebase,
+  including canonical entry points, package ownership, dependencies, runtime or
+  scientific flow, public boundaries, and intentional absences; distinguish
+  current and target structure during migration.
 - `docs/COMMANDS.md`: exact compilation commands and their source, build,
   install, and output locations.
 - `README.md`: human introduction and basic usage when already authoritative.
@@ -91,7 +93,8 @@ overwrites existing docs. Replace template prompts with repository facts.
 
 ## Rules
 
-- Do not turn `AGENTS.md` into a large manual. Keep it as a map.
+- Do not turn `AGENTS.md` into a large manual. Keep it focused on repository-
+  specific working rules and links to the authoritative map and commands.
 - Keep repo-level `AGENTS.md` at the root.
 - Store harness templates in `templates/`; map its `AGENTS.md` to the repo root
   and other templates to `docs/`.
@@ -105,8 +108,9 @@ overwrites existing docs. Replace template prompts with repository facts.
 - Prefer a small update to an existing authority over a new document.
 - Keep docs actionable; prefer links and indexes over duplication.
 - Mark uncertainty explicitly when code behavior cannot be verified.
-- Update docs when code direction, public boundaries, ownership, dependencies,
-  or compilation changes—not for every implementation diff.
+- Update the architecture map when canonical entry points, code ownership,
+  dependencies, runtime flow, or public boundaries materially change—not for
+  every implementation diff.
 - Do not add Doxygen comments unless the user explicitly requests API or
   Doxygen-style documentation.
 
