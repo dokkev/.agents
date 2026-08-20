@@ -10,6 +10,7 @@ style.
 ## Section Map
 
 - [Core Contract](#core-contract)
+- [Python References](#python-references)
 - [Prefer the Obvious Python Representation](#prefer-the-obvious-python-representation)
 - [Collections Are Not Records](#collections-are-not-records)
 - [Keep Dictionaries at Boundaries](#keep-dictionaries-at-boundaries)
@@ -41,8 +42,20 @@ Keep the scientific or application control flow visible. Hide serialization,
 framework conversion, hashing, plotting, path construction, and low-level
 mechanics rather than hiding the algorithm itself.
 
-PEP 20 is an architectural guide here: explicit, simple, flat, sparse, readable,
-and preferably one obvious production path.
+Use the official Python guidance as the baseline. This reference focuses on
+repository-scale design choices that those documents do not prescribe in
+detail.
+
+## Python References
+
+Do not duplicate general Python guidance here. Use the official references:
+
+- PEP 20 — The Zen of Python: https://peps.python.org/pep-0020/
+- PEP 8 — Style Guide for Python Code: https://peps.python.org/pep-0008/
+- PEP 557 — Data Classes: https://peps.python.org/pep-0557/
+
+This document focuses on representation choice, data modeling, ownership,
+framework boundaries, and keeping domain logic visible.
 
 ## Prefer the Obvious Python Representation
 
