@@ -5,6 +5,11 @@ description: Design or revise software architecture for robotics, robot control,
 
 # Architecture Designer
 
+Prefer short, direct designs that lead to short, direct Python and C++ code.
+Optimize for architecture that an individual or small research team can
+understand and modify quickly, not for a commercial codebase that anticipates
+every hypothetical future requirement.
+
 Design the smallest clear robotics research architecture. Preserve correctness,
 hardware safety, numerical validity, and demonstrated real-time needs without
 importing production-scale infrastructure.

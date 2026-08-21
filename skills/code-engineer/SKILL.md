@@ -11,8 +11,32 @@ description: >-
 
 # Code Engineer
 
+Prefer short, direct code in both Python and C++. Optimize for code that an
+individual or small research team can understand and modify quickly, not for a
+commercial codebase that anticipates every hypothetical future requirement.
+
 Produce correct, hardware-safe, numerically valid research code within request
 scope. Avoid unrequired infrastructure or redesign.
+
+## Research Code Philosophy
+
+Prefer the smallest direct implementation that makes the domain behavior clear.
+Code should be easy to read, understand, modify, debug, and delete.
+
+Do not add abstraction, indirection, defensive machinery, compatibility layers,
+or extensibility for hypothetical future requirements. Every class, helper,
+wrapper, property, intermediate type, adapter, and layer must earn its existence
+through clearer domain meaning, correctness, safety, or a substantial reduction
+of real complexity. If removing it would not materially hurt those properties,
+do not add it.
+
+Simple is better than general. Explicit is better than clever. Easy to change
+is more important than easy to extend hypothetically.
+
+Simplicity does not mean unstructured data. Use plain collections when they are
+genuinely collections, but use named types when data has stable semantic fields.
+Avoid both unnecessary object machinery and schemas encoded in ad-hoc
+structures or magic values.
 
 ## Select The Mode
 
@@ -85,10 +109,11 @@ heading-first rule to long repository docs. Safe repository contracts prevail.
 
 | Trigger in the requested work | Read |
 | --- | --- |
+| general code structure, abstraction, ownership, readability, or avoiding over-engineering in Python or C++ | `references/general-code-guidline.md` |
 | control variable names, physical quantities, pipeline stages, or public control data | `references/control-variable-naming.md` |
 | units, frames, transforms, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
 | function decomposition, helper boundaries, mutation, outputs, status handling, or Eigen lifetime | `references/control-function-implementation.md` |
-| Python API/data modeling, dataclasses, tuple/dict usage, module structure, Python refactoring, PEP 20, or Python readability | `references/python-code-design.md` |
+| Python API/data modeling, dataclasses, tuple/dict/string usage, module structure, Python refactoring, PEP 20, or Python readability | `references/python-code-design.md`; also read `references/general-code-guidline.md` when structural simplicity is the dominant concern |
 | YAML, `yaml-cpp`, controller gains, FSM parameters, limits, thresholds, or timeouts | `references/yaml-configuration.md` |
 | controller-to-hardware `RobotCommand` handoff, hardware validation, limiting, transmission, or required hardware-owned command smoothing | `references/hardware-command-boundary.md` |
 | device or transport I/O, packets, reads/writes, retries, reconnects, or hidden blocking | `references/hardware-io.md` |
@@ -126,8 +151,16 @@ an explicit request; otherwise report it unverified.
 For review, load `references/review.md`, stay read-only during the Review pass,
 and follow repository/task policy for self-review versus independent review. If
 fixes are explicitly requested, perform them in Implement mode according to the
-same local policy. For test or validation, load `references/testing.md` and match
-the request. Report only actions actually run.
+same local policy.
+
+For test or validation, load `references/testing.md` and match the request.
+Prioritize functionally critical behavior and regressions. Do not create tests
+for trivial getters, constructors, wrappers, or framework boilerplate merely to
+increase test count or coverage. A smoke test should exercise a meaningful
+critical path, not just prove that a module imports or a process starts unless
+startup itself is the contract.
+
+Report only actions actually run.
 
 ## Final Report
 
