@@ -16,6 +16,7 @@ style.
 - [Keep Dictionaries at Boundaries](#keep-dictionaries-at-boundaries)
 - [Functions Before Classes](#functions-before-classes)
 - [Use Dataclasses for Meaningful Data](#use-dataclasses-for-meaningful-data)
+- [Avoid Pass-Through Accessors](#avoid-pass-through-accessors)
 - [Keep One Source of Truth](#keep-one-source-of-truth)
 - [Keep Framework Types at Boundaries](#keep-framework-types-at-boundaries)
 - [Keep Core Logic Visible](#keep-core-logic-visible)
@@ -150,13 +151,43 @@ dataclass constructor.
 Do not replace every local tuple, dictionary, or temporary result with a
 dataclass. Named types should remove semantic ambiguity, not add ceremony.
 
+## Avoid Pass-Through Accessors
+
+Do not add a public property or getter merely to forward a value that is already
+clearly accessible through an owned object.
+
+Prefer the direct composition path when it reflects the actual ownership:
+
+```python
+# Prefer
+mechanics.identity.post_contact_travel_mm
+```
+
+Do not flatten that path with repetitive forwarding accessors:
+
+```python
+# Avoid
+@property
+def post_contact_travel_mm(self) -> float:
+    return self.identity.post_contact_travel_mm
+```
+
+A forwarding accessor is justified only when it establishes a meaningful public
+boundary, preserves an intentionally stable external API, or adds behavior such
+as validation, normalization, derivation, or an invariant.
+
+If many forwarding accessors are needed, reconsider ownership instead of hiding
+the object structure behind aliases.
+
 ## Keep One Source of Truth
 
 Do not independently maintain the same concept as a tuple, set, string,
 constant, copied dictionary, and framework-specific object.
 
-Keep one authoritative representation and derive other forms with properties,
-functions, or boundary adapters.
+Keep one authoritative representation and derive genuinely different forms with
+properties, functions, or boundary adapters. A property that only aliases an
+already accessible nested field is not a derived representation; prefer direct
+access or move ownership to the class that conceptually owns the value.
 
 When a third-party library needs a different representation, convert from the
 authoritative domain object at the integration boundary. Do not let two
