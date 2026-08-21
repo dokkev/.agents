@@ -11,18 +11,17 @@ description: >-
 
 # Code Engineer
 
+Prefer short, direct code in both Python and C++. Optimize for code that an
+individual or small research team can understand and modify quickly, not for a
+commercial codebase that anticipates every hypothetical future requirement.
+
 Produce correct, hardware-safe, numerically valid research code within request
 scope. Avoid unrequired infrastructure or redesign.
 
 ## Research Code Philosophy
 
-This repository targets research software maintained by individuals and small
-lab teams. It is not a commercial codebase that must anticipate every future
-use case, integration, or compatibility requirement.
-
-Optimize first for code that a researcher can read, understand, modify, debug,
-and delete with low effort. Prefer the smallest direct implementation that makes
-the domain behavior clear.
+Prefer the smallest direct implementation that makes the domain behavior clear.
+Code should be easy to read, understand, modify, debug, and delete.
 
 Do not add abstraction, indirection, defensive machinery, compatibility layers,
 or extensibility for hypothetical future requirements. Every class, helper,
@@ -34,10 +33,10 @@ do not add it.
 Simple is better than general. Explicit is better than clever. Easy to change
 is more important than easy to extend hypothetically.
 
-Simplicity does not mean unstructured data. In Python, use plain collections
-when they are genuinely collections, but use named types when data has stable
-semantic fields. Avoid both unnecessary object machinery and schemas encoded in
-ad-hoc dictionaries, heterogeneous positional tuples, or magic strings.
+Simplicity does not mean unstructured data. Use plain collections when they are
+genuinely collections, but use named types when data has stable semantic fields.
+Avoid both unnecessary object machinery and schemas encoded in ad-hoc
+structures or magic values.
 
 ## Select The Mode
 
@@ -110,7 +109,7 @@ heading-first rule to long repository docs. Safe repository contracts prevail.
 
 | Trigger in the requested work | Read |
 | --- | --- |
-| general code structure, abstraction, ownership, readability, or avoiding over-engineering | `references/general-code-guidline.md` |
+| general code structure, abstraction, ownership, readability, or avoiding over-engineering in Python or C++ | `references/general-code-guidline.md` |
 | control variable names, physical quantities, pipeline stages, or public control data | `references/control-variable-naming.md` |
 | units, frames, transforms, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
 | function decomposition, helper boundaries, mutation, outputs, status handling, or Eigen lifetime | `references/control-function-implementation.md` |
