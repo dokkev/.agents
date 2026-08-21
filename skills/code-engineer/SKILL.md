@@ -151,8 +151,16 @@ an explicit request; otherwise report it unverified.
 For review, load `references/review.md`, stay read-only during the Review pass,
 and follow repository/task policy for self-review versus independent review. If
 fixes are explicitly requested, perform them in Implement mode according to the
-same local policy. For test or validation, load `references/testing.md` and match
-the request. Report only actions actually run.
+same local policy.
+
+For test or validation, load `references/testing.md` and match the request.
+Prioritize functionally critical behavior and regressions. Do not create tests
+for trivial getters, constructors, wrappers, or framework boilerplate merely to
+increase test count or coverage. A smoke test should exercise a meaningful
+critical path, not just prove that a module imports or a process starts unless
+startup itself is the contract.
+
+Report only actions actually run.
 
 ## Final Report
 
