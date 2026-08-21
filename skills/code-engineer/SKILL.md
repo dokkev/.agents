@@ -14,6 +14,31 @@ description: >-
 Produce correct, hardware-safe, numerically valid research code within request
 scope. Avoid unrequired infrastructure or redesign.
 
+## Research Code Philosophy
+
+This repository targets research software maintained by individuals and small
+lab teams. It is not a commercial codebase that must anticipate every future
+use case, integration, or compatibility requirement.
+
+Optimize first for code that a researcher can read, understand, modify, debug,
+and delete with low effort. Prefer the smallest direct implementation that makes
+the domain behavior clear.
+
+Do not add abstraction, indirection, defensive machinery, compatibility layers,
+or extensibility for hypothetical future requirements. Every class, helper,
+wrapper, property, intermediate type, adapter, and layer must earn its existence
+through clearer domain meaning, correctness, safety, or a substantial reduction
+of real complexity. If removing it would not materially hurt those properties,
+do not add it.
+
+Simple is better than general. Explicit is better than clever. Easy to change
+is more important than easy to extend hypothetically.
+
+Simplicity does not mean unstructured data. In Python, use plain collections
+when they are genuinely collections, but use named types when data has stable
+semantic fields. Avoid both unnecessary object machinery and schemas encoded in
+ad-hoc dictionaries, heterogeneous positional tuples, or magic strings.
+
 ## Select The Mode
 
 Use this skill for every code-related request. Then choose the smallest explicit
@@ -88,7 +113,7 @@ heading-first rule to long repository docs. Safe repository contracts prevail.
 | control variable names, physical quantities, pipeline stages, or public control data | `references/control-variable-naming.md` |
 | units, frames, transforms, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
 | function decomposition, helper boundaries, mutation, outputs, status handling, or Eigen lifetime | `references/control-function-implementation.md` |
-| Python API/data modeling, dataclasses, tuple/dict usage, module structure, Python refactoring, PEP 20, or Python readability | `references/python-code-design.md` |
+| Python API/data modeling, dataclasses, tuple/dict/string usage, module structure, Python refactoring, PEP 20, or Python readability | `references/python-code-design.md`; use `references/python-code-examples.md` when representation or structural simplicity is the dominant concern |
 | YAML, `yaml-cpp`, controller gains, FSM parameters, limits, thresholds, or timeouts | `references/yaml-configuration.md` |
 | controller-to-hardware `RobotCommand` handoff, hardware validation, limiting, transmission, or required hardware-owned command smoothing | `references/hardware-command-boundary.md` |
 | device or transport I/O, packets, reads/writes, retries, reconnects, or hidden blocking | `references/hardware-io.md` |
