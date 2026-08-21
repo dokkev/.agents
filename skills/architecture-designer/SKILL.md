@@ -1,6 +1,6 @@
 ---
 name: architecture-designer
-description: Design or revise software architecture for robotics, robot control, hardware integration, simulation, and ROS 2 research code. Use when defining class responsibilities, mutable-state ownership, dependency direction, runtime orchestration, finite-state-machine structure, ROS 2 package boundaries, header/type organization, hardware-control separation, lifecycle, failure paths, or real-time boundaries before implementation. Do not use for implementation-only work or implementation-quality review unless the user also requests architectural redesign.
+description: Design or revise software architecture for robotics, robot control, hardware integration, simulation, reinforcement learning, and ROS 2 research code. Use when defining class responsibilities, mutable-state ownership, dependency direction, runtime orchestration, finite-state-machine structure, RL environment and training workflow, ROS 2 package boundaries, header/type organization, hardware-control separation, lifecycle, failure paths, or real-time boundaries before implementation. Do not use for implementation-only work or implementation-quality review unless the user also requests architectural redesign.
 ---
 
 # Architecture Designer
@@ -76,6 +76,7 @@ contain `Core Contract`. Explicit safe repository contracts take precedence.
 | Design question | Read |
 | --- | --- |
 | class responsibility, component ownership, public domain types, lifecycle, failure, or dependency direction | `references/class.md` |
+| RL project structure, Isaac Lab workflow selection, environment/task ownership, observation/action/reward flow, training/evaluation separation, or policy-learning workflow | `references/rl-workflow.md` |
 | Pinocchio-based `RobotSystem`, authoritative model-based robot state, state/model coherence, live versus rollout state, or optional stored command handoff | `references/robot-system.md` |
 | control-cycle ordering, ROS 2 `read-update-write` flow, thin ROS wrappers, `RobotHardware` orchestration, ROS interface storage, command flow, or multi-rate runtime boundaries | `references/runtime-dataflow.md` |
 | states, modes, transitions, state lifecycle, FSM coordination, trajectory generation, or motion planning | `references/finite-state-machine.md` |
