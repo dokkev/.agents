@@ -28,6 +28,16 @@ Do not expand one requested command into a full suite. Do not change production
 code merely to make a weak or obsolete test pass without confirming the actual
 contract.
 
+Prefer functionally critical tests over broad test count or coverage. A test is
+worth keeping when its failure would reveal a real regression in domain behavior,
+numerical correctness, safety, state transition, command flow, boundary
+conversion, or an external contract that matters to the repository.
+
+Do not create tests for trivial getters, constructors, forwarding wrappers,
+constant access, framework boilerplate, or implementation details merely because
+they are easy to test. Do not add redundant tests that protect the same behavior
+without a distinct failure mode.
+
 ## Context
 
 Read:
@@ -61,6 +71,14 @@ Prioritize relevant cases from:
 Test public behavior rather than private implementation trivia. Prefer one
 precise regression test over a broad test with a vague failure signal. Do not
 chase coverage percentage at the expense of useful assertions.
+
+A unit test should protect a meaningful function or contract. If deleting the
+test would not make a plausible functional regression harder to catch, do not
+add it.
+
+A smoke test should exercise the shortest meaningful critical path. Import-only,
+construction-only, or process-start-only smoke tests are useful only when that
+startup behavior is itself an important repository contract.
 
 For hardware-facing code, prefer deterministic protocol tests, fake hardware,
 simulation, dry-run, log replay, or disabled motors. Use real hardware only when
