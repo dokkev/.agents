@@ -1,141 +1,53 @@
-# Testing And Validation
+# Focused Testing and Validation
 
-Load this reference only when the user explicitly asks to design or add tests,
-run tests, compile, validate, or perform a smoke check. Do not use it as an
-automatic follow-up to implementation or review.
+Use when checks or test work are included in the task contract from `SKILL.md`.
+That contract owns execution and edit permissions. Reading this reference does
+not add a test, build, review, or experiment requirement.
 
-## Section Map
+## Choose Evidence
 
-- [Core Contract](#core-contract)
-- [Context](#context)
-- [Test Design](#test-design)
-- [Concern Matrix](#concern-matrix)
-- [Validation Selection](#validation-selection)
-- [Reporting](#reporting)
+Identify the changed behavior and the specific failure a check should catch.
+Reuse existing tests, logs, and artifacts when they already answer that question
+and their code, inputs, configuration, and environment assumptions still hold.
+Do not present stale evidence as verification of changed behavior.
 
-## Core Contract
+Use repository-native commands and nearby tests. Read `docs/COMMANDS.md`, test
+configuration, or a focused testing document only for the needed command; do
+not rediscover the full environment for each task.
 
-| Request | Action |
+| Changed contract | Useful focused evidence |
 | --- | --- |
-| test plan or coverage analysis | inspect and propose tests; do not edit or run |
-| add or fix tests | edit the focused test surface; run only if requested |
-| run tests | execute the narrowest relevant existing test command |
-| build or compile | compile the owning target or package |
-| validate or smoke-check | run the smallest check that exercises the requested behavior |
-| fix a failing check | diagnose, make the scoped fix, and rerun that check |
+| Calculation or solver adapter | Known expected values, boundary case, solver failure |
+| Units, frames, ordering | Independent conversion or non-identity mapping case |
+| Parser, configuration, protocol | Valid input plus relevant rejection or round trip |
+| State or control history | Transition, reset, stale input, complete fallback |
+| Concurrency | Snapshot ownership, overflow, or shutdown on the affected path |
+| CLI or build wiring | Representative safe invocation or smallest owning target |
+| Hardware boundary | Protocol replay, fake hardware, or approved safe dry-run |
 
-Do not expand one requested command into a full suite. Do not change production
-code merely to make a weak or obsolete test pass without confirming the actual
-contract.
+A finite output alone is not numerical correctness. Derive expected values and
+tolerances independently where practical. Test public behavior, not private
+helper structure, trivial getters, or coverage counts. Import-only or startup
+checks are useful when import or startup is the changed contract, not as a
+substitute for exercising the algorithm.
 
-Prefer functionally critical tests over broad test count or coverage. A test is
-worth keeping when its failure would reveal a real regression in domain behavior,
-numerical correctness, safety, state transition, command flow, boundary
-conversion, or an external contract that matters to the repository.
+## Run and Stop
 
-Do not create tests for trivial getters, constructors, forwarding wrappers,
-constant access, framework boilerplate, or implementation details merely because
-they are easy to test. Do not add redundant tests that protect the same behavior
-without a distinct failure mode.
+Execute the smallest authorized check that addresses the risk. Use a timeout
+where a command may hang. Record the first actionable failure and distinguish a
+change defect from an environment, dependency, or unrelated existing failure.
 
-## Context
+When fixes are in scope, correct the owning defect and rerun only the checks
+whose result the fix invalidated. Do not expand a focused check into a suite,
+benchmark, FEA run, optimization campaign, training run, or physical experiment
+merely for confidence. Do not execute hardware just because a command is listed.
 
-Read:
+Do not bend production behavior to satisfy a stale or incorrect test. Report a
+contract conflict or unavailable required evidence without silently changing scope.
 
-- the closest `AGENTS.md`;
-- `docs/COMMANDS.md` for compilation commands and build locations;
-- project-native build files, test configuration, scripts, or a focused
-  `docs/TESTING.md` for test and smoke commands;
-- existing nearby tests to match framework, fixture, naming, and assertion style.
+## Report
 
-Use `docs/ARCHITECTURE.md` only when ownership or integration boundaries affect
-test placement.
-
-## Test Design
-
-Prefer the smallest deterministic test that fails for the behavior, regression,
-or contract violation the user cares about.
-
-Prioritize relevant cases from:
-
-- expected behavior and boundary inputs;
-- invalid input and failure fallback;
-- units, frames, signs, ordering, and conversion;
-- numerical edge cases and solver rejection;
-- parser, serialization, and public config contracts;
-- state-machine transition and reset behavior;
-- stale state, timeout, overflow, and concurrency handoff;
-- public API, command mapping, saturation, and safety limits;
-- integration wiring, startup, plugin discovery, fake hardware, or dry-run.
-
-Test public behavior rather than private implementation trivia. Prefer one
-precise regression test over a broad test with a vague failure signal. Do not
-chase coverage percentage at the expense of useful assertions.
-
-A unit test should protect a meaningful function or contract. If deleting the
-test would not make a plausible functional regression harder to catch, do not
-add it.
-
-A smoke test should exercise the shortest meaningful critical path. Import-only,
-construction-only, or process-start-only smoke tests are useful only when that
-startup behavior is itself an important repository contract.
-
-For hardware-facing code, prefer deterministic protocol tests, fake hardware,
-simulation, dry-run, log replay, or disabled motors. Use real hardware only when
-the user explicitly requests it and the safety boundary is clear.
-
-## Concern Matrix
-
-Select cases from only the concerns in the user's requested test scope.
-
-| Concern | High-value cases |
-| --- | --- |
-| data conventions | zero/sign/scale, saturation, encode/decode round trip, non-identity ordering, motor/joint conversion, frame and quaternion variants |
-| numerical code | nominal expected output, near-zero and wrap boundaries, singular/rank-deficient input, solver failure, non-finite rejection, scale-aware tolerance |
-| repeated loop | initialization contract, malformed boundary input, every early-return fallback, recovery reset, allocation guard when no-allocation is claimed |
-| discrete time | first update, invalid or excessive `dt`, missed cycle, integrator saturation/anti-windup, filter reset, bumpless transition, warm-start invalidation, rate change |
-| concurrency | complete snapshots, mismatched producer/consumer rates, stale/duplicate/overflow behavior, shutdown lifetime, race detector where practical |
-| command boundary | structural rejection, atomic handoff, controller fallback completeness, hardware limiting, send failure, transmission status and protection activation, no partial application |
-| hardware I/O | encode/decode round trip, complete and partial frames, length/checksum/sequence rejection, bounded wait, no hidden retry or reconnect, complete-result publication |
-| FSM | entry/re-entry/exit order, transition commit boundary, self/invalid/failure transition, explicit failure outcome and next-behavior semantics |
-| YAML | missing key, wrong type/shape, non-finite or unsafe value, contextual error, atomic live replacement |
-
-Derive expected values and tolerances independently from the implementation
-when practical. A test that checks only that output is finite is not a numerical
-correctness test.
-
-## Validation Selection
-
-Choose the smallest command that matches the requested check:
-
-- library or numerical change: focused unit test or owning target build;
-- parser/protocol change: known input/output or config parse check;
-- configuration/wiring change: parse, startup, launch, or plugin check;
-- CLI/script change: `--help` or one representative invocation;
-- build-system change: minimal affected target before dependents;
-- hardware path: build or safe fake/dry-run before physical execution.
-
-Use timeouts for commands that may hang. Capture the first actionable failure
-and enough context to identify whether its owner is the change, dependency,
-environment, stale command, or external system.
-
-## Reporting
-
-For test design or implementation, report:
-
-- scope;
-- tests proposed or changed;
-- behavior each test protects;
-- whether anything was run;
-- remaining gaps.
-
-For validation, report:
-
-- validated scope;
-- exact commands run;
-- result and first actionable failure;
-- likely owner;
-- unexercised behavior and residual risk.
-
-Never claim a test, build, launch, simulation, dry-run, or hardware run occurred
-unless it actually did.
+State exact commands run, outcomes, reused evidence and why it remains relevant,
+and unexercised behavior. For test edits, state the regression protected and
+whether execution occurred. Distinguish static checks from runtime or scientific
+validation. Stop once the requested evidence is obtained.
