@@ -1,8 +1,9 @@
 # Codex Robotics Skills
 
-Reusable Codex skills for robotics and research-software development. The
-collection keeps repository knowledge separate from reusable workflows and
-loads detailed references only when a task needs them.
+Reusable Codex skills for robotics and research-software development. Keep the
+ordinary implementation path short; load technical references only when their
+contracts matter. These instructions are model-agnostic, not a growing list of
+workarounds for one model version.
 
 ## Install on Ubuntu
 
@@ -43,63 +44,82 @@ For the separate checkout:
 git -C "$HOME/.local/share/dokkev-agents" pull --ff-only
 ```
 
-## Included skills
+## Included Skills
 
 | Skill | Purpose |
 | --- | --- |
-| `architecture-designer` | Design ownership, dependencies, runtime flow, lifecycle, and ROS 2 or hardware boundaries before implementation. |
-| `code-engineer` | Default skill for code-related implementation, review, test, and validation work in the requested mode. |
-| `docs-gardener` | Maintain a minimal repository harness and keep its architecture map and compilation knowledge accurate. |
+| `code-engineer` | Scoped implementation, review, or checks; everyday Python defaults are in the entrypoint. |
+| `architecture-designer` | Resolve actual ownership, dependency, lifecycle, and runtime-boundary decisions. |
+| `docs-gardener` | Maintain authoritative repository facts and create a minimal harness when requested. |
 
-Codex can select a skill from the request automatically. In the CLI or IDE,
-invoke one explicitly with `$skill-name`:
+Invoke a skill explicitly with `$skill-name`, or let Codex match the request:
 
 ```text
-$architecture-designer Design the ownership and runtime flow for this controller.
-$code-engineer Implement the approved controller interface.
-$code-engineer Review this diff for numerical and concurrency issues.
-$docs-gardener Create the minimal repository harness.
+$code-engineer Implement the approved solver adapter. Reuse the existing result type.
+$code-engineer Fix the regression and run only its focused test.
+$code-engineer Review this diff without making changes or running experiments.
+$architecture-designer Decide which component should own the warm-start state.
+$docs-gardener Update the architecture map for the implemented boundary change.
 ```
 
-## Sub-agent execution
+## Policy and Reference Ownership
 
-Default to one agent. Delegate only bounded, independent work with an explicit
-mode, deliverable, and non-overlapping write ownership. Delegation does not
-expand the user's authority, and the parent agent remains responsible for
-integration and the final result.
+The current task and applicable repository instructions set execution scope,
+cost/safety limits, and review requirements. `skills/code-engineer/SKILL.md` supplies
+fallbacks: one agent, no automatic validation campaign or separate review pass,
+existing evidence reused when still valid, and no speculative abstractions.
+An explicitly required independent reviewer or check must still be honored.
 
-Review independence is project-specific. A repository may allow self-review or
-require review by a separate non-author agent. Follow the closest repository
-instructions or explicit user request, and never describe self-review as
-independent review.
+The entrypoint holds everyday implementation rules, including Python defaults.
+`skills/code-engineer/references/python-code-design.md` supplies examples for ambiguous choices.
+Control, numerical, hardware, and other domain references retain their technical
+contracts. Review and testing references explain how to assess evidence, not
+whether another agent or experiment must be launched.
 
-## Repository harness
+Read relevant sections directly. The bundled `read_reference.py` remains an
+optional navigation tool; neither a heading-list command nor a prescribed
+`Core Contract`/`Section Map` layout is required to perform a task.
 
-These global skills define reusable workflows. Each project keeps its own facts
-in a small local harness:
+## Repository Harness
+
+Keep project knowledge separate from these reusable skills:
 
 | File | Responsibility |
 | --- | --- |
-| `AGENTS.md` | Short repository-specific working rules and links to authoritative documents. |
-| `docs/ARCHITECTURE.md` | Navigational map of the current accepted codebase: canonical entry points, ownership, dependencies, runtime flow, public boundaries, and intentional absences. |
-| `docs/COMMANDS.md` | Source, build, install, and output locations plus exact compilation commands. |
+| `AGENTS.md` | Project-specific working rules, execution boundaries, review policy, and links. |
+| `docs/ARCHITECTURE.md` | Current entry points, owners, dependencies, scientific/runtime flow, and intentional absences. |
+| `docs/COMMANDS.md` | Exact compilation commands and source/build/install/output locations. |
 
-The architecture document is primarily a map of the code that currently exists.
-When a migration is incomplete, it should distinguish verified current structure
-from the accepted target rather than presenting proposed architecture as current
-reality.
+Ask `docs-gardener` to create a harness when needed. Remove irrelevant template
+sections. Distinguish current code from proposed or partially implemented design;
+do not create documentation simply to complete a standard checklist.
 
-Ask `$docs-gardener` to create or maintain this harness for a project. It does
-not create `PLANS.md` or `DECISIONS.md` by default.
+Updating this checkout changes the skills, not previously installed project
+`AGENTS.md` files, global instructions, or task templates. Reconcile conflicting
+rules there explicitly; the harness installer never overwrites existing files.
+In particular, a task template that mandates an independent reviewer still does
+so after this update. Installing this repository does not itself install global
+Codex instructions outside the skill directories.
 
-## Validate context contracts
+## Focused Static Checks
 
-Run the repository check after changing a skill or reference:
+After changing entrypoints or reference paths, run:
 
 ```bash
 python3 scripts/validate_context.py
 ```
 
-It enforces skill word budgets, direct reference discovery, unique section
-headings, bounded `Core Contract` sections, complete section maps, and identical
-bundled section readers.
+This checks required metadata presence, entrypoint word budgets, existing
+reference paths, and direct reference discovery. It does not mandate reference
+section layouts or compare optional reader copies. It does not prove skill
+selection, instruction compliance, token savings, or runtime correctness.
+
+When changing the validator, its focused regression checks are:
+
+```bash
+python3 scripts/test_validate_context.py
+```
+
+No new model benchmark or experiment suite is required by these instructions.
+Evaluate real behavior through ordinary tasks and their existing results rather
+than repeatedly rerunning expensive work for reassurance.

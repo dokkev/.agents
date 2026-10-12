@@ -1,117 +1,75 @@
 ---
 name: docs-gardener
-description: Maintain a small, accurate repository harness centered on AGENTS.md, docs/ARCHITECTURE.md, and docs/COMMANDS.md, and create Doxygen-style API documentation when explicitly requested. Use when the user asks to document code direction, ownership, dependencies, runtime flow, compilation commands, source/build/install locations, repo-specific agent guidance, stale documentation, a minimal harness, or Doxygen comments for a repository.
+description: >-
+  Create or maintain a minimal repository harness: AGENTS.md,
+  docs/ARCHITECTURE.md, and docs/COMMANDS.md. Use for repository guidance, stale
+  documentation, ownership and runtime maps, build commands and locations, or
+  explicitly requested Doxygen/API documentation. Do not run as an automatic
+  documentation phase after every code edit.
 ---
 
 # Docs Gardener
 
-Keep repository docs small and trustworthy. Record durable direction and
-reproducible build knowledge, not session history.
+Keep durable repository facts in the smallest existing authoritative document.
+Do not create documentation merely to fill a template or record session history.
 
 ## Workflow
 
-1. Read the closest `AGENTS.md` and only the authoritative documents touched by
-   the request: `docs/ARCHITECTURE.md` as the repository's navigational map and
-   current accepted architectural state, and `docs/COMMANDS.md` for compilation
-   or build locations.
-2. Compare claims with relevant source, builds, scripts, config, tests, and
-   observed behavior.
-3. Classify each gap as stale, missing, duplicated, misplaced, or unverifiable.
-4. Update the smallest authoritative document for the knowledge.
-5. Verify paths and commands when practical; never call an unexecuted command
-   verified.
-6. Remove obsolete guidance instead of preserving it as history.
+Follow applicable repository instructions and the request. Read only the docs
+and source needed for the changed fact. Reuse still-valid prior evidence.
+Compare claims with source, configuration, scripts, or existing results; keep
+unverified commands and proposed architecture clearly distinguished from facts.
 
-## Sub-agent Delegation
+Update or remove stale text at its owner rather than duplicating it elsewhere.
+Check changed paths and links. Do not execute builds, tests, simulations, or
+hardware just to document commands; execution follows the task/project policy.
 
-Default to one agent. Delegate independent evidence collection across
-non-overlapping sources with exact facts and paths to verify.
-Keep one editor per authoritative document; the parent verifies and integrates.
-Do not recursively delegate by default.
+Read relevant Markdown sections directly. Use `scripts/read_reference.py` only
+when it helps navigate a long document; there is no mandatory pre-read command.
+Default to one agent and one editor per document. Delegate only useful bounded
+evidence collection, not repeated verification.
 
-For a Markdown document over 100 lines, list its H2 sections before reading it:
+## Knowledge Ownership
 
-```bash
-python3 "$DOCS_GARDENER_DIR/scripts/read_reference.py" \
-  docs/ARCHITECTURE.md --list
-python3 "$DOCS_GARDENER_DIR/scripts/read_reference.py" docs/ARCHITECTURE.md \
-  --section "Runtime Flow" --section "Hardware Boundary"
-```
+| Document | Contents |
+| --- | --- |
+| `AGENTS.md` | Project-specific scope, cost/safety boundaries, review policy, links |
+| `docs/ARCHITECTURE.md` | Current entry points, ownership, dependencies, scientific/runtime flow |
+| `docs/COMMANDS.md` | Exact compilation commands and source/build/install/output locations |
+| Existing `README.md` | Human introduction and usage |
 
-Set `DOCS_GARDENER_DIR` to this skill directory, then run from the target repo.
-Read the full document only to review or restructure it, reconcile several
-sections, or resolve cross-section conflicts.
+Use source or project-native test configuration when no authoritative document
+exists. Do not invent missing facts. Distinguish current and target architecture
+during migration. Update the map only when entry points, ownership, flow, or
+public boundaries materially change, not for every diff.
 
-## Requested API Documentation
+Keep rationale beside its boundary. Do not create `PLANS.md`, `DECISIONS.md`, or
+additional focused documents unless the request or durable knowledge warrants it.
 
-Create Doxygen-style docs only when explicitly requested; never add them as an
-automatic follow-up.
+## Create a Harness
 
-When requested, read [references/doxygen.md](references/doxygen.md) as the only
-skill reference. Preserve local comment syntax, document contracts at
-declarations, avoid duplicate prose at definitions, and do not change behavior.
+Only when requested, use `templates/AGENTS.md`, `templates/ARCHITECTURE.md`, and
+`templates/COMMANDS.md`. Omit irrelevant sections and replace prompts with facts.
+Keep root `AGENTS.md` short; other harness documents belong under `docs/`.
 
-## What To Maintain
-
-- `AGENTS.md`: short repo-specific working rules and links to authoritative
-  documents.
-- `docs/ARCHITECTURE.md`: navigational map of the current accepted codebase,
-  including canonical entry points, package ownership, dependencies, runtime or
-  scientific flow, public boundaries, and intentional absences; distinguish
-  current and target structure during migration.
-- `docs/COMMANDS.md`: exact compilation commands and their source, build,
-  install, and output locations.
-- `README.md`: human introduction and basic usage when already authoritative.
-- Optional focused documents only when stable reusable knowledge justifies them.
-
-Do not create `PLANS.md` or `DECISIONS.md` by default. Keep temporary plans in
-the task and durable rationale beside the architecture.
-
-## Repo Harness Template
-
-Use the bundled template only when explicitly asked to create a repo harness.
-
-Use `templates/`, `scripts/install_repo_harness.py`, and the current-workspace
-wrapper `scripts/install_repo_harness_here.sh`. They create root `AGENTS.md`,
-`docs/ARCHITECTURE.md`, and `docs/COMMANDS.md`.
-
-Prefer the installer for a new repo:
+Use the existing installer, which creates missing files without overwriting:
 
 ```bash
+python3 "$HOME/.agents/skills/docs-gardener/scripts/install_repo_harness.py" <repo-root> --dry-run
 python3 "$HOME/.agents/skills/docs-gardener/scripts/install_repo_harness.py" <repo-root>
 ```
 
-To install into the current workspace:
+`scripts/install_repo_harness_here.sh` targets the current workspace. A template
+change does not update already-installed project instructions; reconcile them
+explicitly when requested, without overwriting project-specific policy.
 
-```bash
-"$HOME/.agents/skills/docs-gardener/scripts/install_repo_harness_here.sh" --dry-run
-"$HOME/.agents/skills/docs-gardener/scripts/install_repo_harness_here.sh"
-```
+## API Documentation
 
-Run `--dry-run` first. The installer creates only missing files and never
-overwrites existing docs. Replace template prompts with repository facts.
+Only for explicitly requested API/Doxygen work, read
+[references/doxygen.md](references/doxygen.md). Preserve local syntax and document
+contracts at declarations without duplicate definition prose or behavior changes.
 
-## Rules
+## Finish
 
-- Do not turn `AGENTS.md` into a large manual. Keep it focused on repository-
-  specific working rules and links to the authoritative map and commands.
-- Keep repo-level `AGENTS.md` at the root.
-- Store harness templates in `templates/`; map its `AGENTS.md` to the repo root
-  and other templates to `docs/`.
-- Generate harness docs under `docs/`, but not a primary `docs/AGENTS.md`.
-- Do not create a document solely to fill a standard list.
-- Do not use `PLANS.md` as a backlog or status archive, or `DECISIONS.md` as a
-  chronological log.
-- Keep rationale beside the boundary it explains.
-- Keep `COMMANDS.md` focused on compilation and build locations.
-- Do not preserve stale docs just because they are detailed.
-- Prefer a small update to an existing authority over a new document.
-- Keep docs actionable; prefer links and indexes over duplication.
-- Mark uncertainty explicitly when code behavior cannot be verified.
-- Update the architecture map when canonical entry points, code ownership,
-  dependencies, runtime flow, or public boundaries materially change—not for
-  every implementation diff.
-- Do not add Doxygen comments unless the user explicitly requests API or
-  Doxygen-style documentation.
-
-Report the documents examined or changed, evidence, and remaining gaps.
+Report changed documents, the evidence used, and unresolved facts. Do not call
+an unexecuted command verified or schedule unsolicited documentation follow-ups.

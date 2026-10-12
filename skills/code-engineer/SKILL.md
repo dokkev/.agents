@@ -1,169 +1,100 @@
 ---
 name: code-engineer
 description: >-
-  Default skill for any code-related task. Always use when asked to implement,
-  modify, fix, debug, refactor, review, inspect, assess, test, validate, build,
-  or otherwise work with C++, Python, robotics, control, simulation, hardware,
-  numerical, ROS 2, configuration, or research software. Preserve the requested
-  mode and do not automatically chain implementation, review, testing, or
-  validation unless requested.
+  Implement, fix, debug, refactor, review, or test Python and C++ research
+  software, including robotics, control, simulation, numerical code, ROS 2,
+  hardware integration, and configuration. Use for code changes and code
+  assessments; preserve the requested scope rather than automatically adding
+  review, testing, or redesign.
 ---
 
 # Code Engineer
 
-Prefer short, direct code in both Python and C++. Optimize for code that an
-individual or small research team can understand and modify quickly, not for a
-commercial codebase that anticipates every hypothetical future requirement.
+Optimize for code a small research team can understand, change, and delete.
+Prefer fewer concepts and less indirection, not merely fewer lines. Preserve
+correctness, hardware safety, numerical validity, and required runtime bounds.
 
-Produce correct, hardware-safe, numerically valid research code within request
-scope. Avoid unrequired infrastructure or redesign.
+## Task Contract
 
-## Research Code Philosophy
+Follow applicable repository instructions and the current task. Use these
+fallbacks only where they do not specify a different workflow:
 
-Prefer the smallest direct implementation that makes the domain behavior clear.
-Code should be easy to read, understand, modify, debug, and delete.
+- Implement only the requested behavior and directly required files. Review or
+  diagnosis is read-only unless fixes are requested. Test design does not
+  implicitly authorize execution or production changes.
+- Do not automatically add tests, a separate review pass, launches, or broad
+  validation to implementation. A cheap, documented compile-only command that
+  cannot start software or touch hardware is permitted, not required.
+- When checks are requested, run only those justified by the change. Reuse
+  existing results whose code, inputs, configuration, and environment assumptions
+  remain valid. After a fix, rerun only affected checks. Do not rerun experiments,
+  FEA, optimization, training, or hardware work merely for reassurance.
+- Default to one agent. Use independent review only when required by the task
+  or project; never call self-review independent. Do not chain reviewers to
+  obtain an all-PASS result. Delegation never expands scope.
+- Stop and report when a required contract is absent or false, or the task needs
+  a substantially larger redesign or new research. Do not silently expand it.
 
-Do not add abstraction, indirection, defensive machinery, compatibility layers,
-or extensibility for hypothetical future requirements. Every class, helper,
-wrapper, property, intermediate type, adapter, and layer must earn its existence
-through clearer domain meaning, correctness, safety, or a substantial reduction
-of real complexity. If removing it would not materially hurt those properties,
-do not add it.
+References refine implementation choices; they do not redefine this contract.
 
-Simple is better than general. Explicit is better than clever. Easy to change
-is more important than easy to extend hypothetically.
+## Implement at the Owner
 
-Simplicity does not mean unstructured data. Use plain collections when they are
-genuinely collections, but use named types when data has stable semantic fields.
-Avoid both unnecessary object machinery and schemas encoded in ad-hoc
-structures or magic values.
+Locate the affected implementation, direct callers, and existing calculation,
+conversion, or adapter before adding another. Reuse relevant code and prior
+results; do not survey the whole repository or reopen settled decisions.
 
-## Select The Mode
+Change behavior where it is owned. Keep one authoritative representation and
+convert at real boundaries. Keep mathematics, state transitions, mutation, and
+failure decisions visible. Extract helpers for a meaningful operation or real
+reuse, not just to shorten the caller. Avoid speculative factories, registries,
+compatibility layers, and parallel implementations.
 
-Use this skill for every code-related request. Then choose the smallest explicit
-mode satisfying the request.
+Preserve existing APIs outside scope. When replacing an internal path is part
+of the task, migrate its owned callers rather than retaining duplicate logic.
+Keep safety checks and units, frames, freshness, timing, and fallback semantics;
+remove neither real contracts nor useful boundaries in the name of simplicity.
 
-| User request | Mode | Write scope |
-| --- | --- | --- |
-| implement, change, fix, debug, refactor, integrate | **Implement** | requested production code and directly required configuration/docs only |
-| review, inspect, find issues, assess code or a diff | **Review** | read-only unless fixes are explicitly requested |
-| design tests, add tests, improve coverage | **Test** | requested test plan or test files |
-| build, run tests, smoke-check, validate | **Validate** | normally read-only; edit only when fixes are requested |
+## Python Defaults
 
-Do not chain modes automatically. Implementation does not authorize tests,
-review, launch, or broad validation; the narrow compile exception below is
-allowed. Review does not authorize fixes; test or validation does not authorize
-production fixes unless the current request explicitly includes them.
+Apply these to every Python implementation, even without opening a reference:
 
-## Sub-agent Delegation
+- Use functions for stateless operations. Use a class for real state, lifecycle,
+  invariants, or a required interface, not merely as a namespace.
+- Reuse existing domain types. Use named records when shared semantics need
+  names; keep obvious local unpacking and genuine collections simple. Do not
+  create a dataclass for every intermediate result or turn every dict into one.
+- Keep one source of truth. Avoid pass-through properties and wrapper chains
+  unless they preserve a real public boundary or add meaningful behavior.
+- Convert solver, serialization, and framework payloads at their owning boundary.
+  When a framework is intrinsic to the algorithm, use it explicitly rather than
+  inventing a neutral interface. Keep optional heavy initialization out of imports.
 
-Default to one agent unless the closest repository instructions, current task,
-or explicit user request require delegation.
+## References When Needed
 
-Delegate only bounded work with an exact mode, scope, deliverable, and
-non-overlapping write ownership. Delegation never expands user authority; the
-parent owns integration and the final result. Do not recursively delegate by
-default.
+Read relevant sections directly; no heading-list command or reader is required.
+Use `scripts/read_reference.py` optionally for long documents. Ordinary Python
+work should not require extra reading. Consult the Python examples for an
+ambiguous design choice; consult domain references when changing their contracts.
+Do not load unrelated references or treat their examples as required scaffolding.
 
-Review independence is repository- and task-specific. A review may be either a
-self-review by the implementation agent or an independent review by a separate
-non-author agent. Follow the closest `AGENTS.md`, `INSTRUCTION.md`, or explicit
-user request for which form is required.
-
-Do not claim a self-review is independent review. If independent review is
-required, assign Review to an agent that did not author the implementation. Do
-not create repeated reviewer chains merely to obtain an all-PASS result unless
-the repository workflow explicitly requires them.
-
-## Minimal Context Workflow
-
-1. Choose the mode and read the closest `AGENTS.md`.
-2. Read `docs/ARCHITECTURE.md` only for relevant direction and
-   `docs/COMMANDS.md` only for requested build or validation work.
-3. Inspect the smallest owning source surface and direct build, configuration,
-   or executable contracts.
-4. Load matching references, perform only the authorized mode, and report
-   actions actually taken.
-
-## Progressive Reference Loading
-
-Start with no references. Load one for the dominant concern; add another only
-for a real gap. Never load review/testing guidance for implementation unless the
-current request explicitly includes those modes.
-
-For a reference over 100 lines, use the bundled reader. Resolve paths from this
-skill directory; commands are shown from that directory.
-
-```bash
-python3 scripts/read_reference.py \
-  references/control-discrete-time-implementation.md --list
-python3 scripts/read_reference.py \
-  references/control-discrete-time-implementation.md \
-  --section "Core Contract" \
-  --section "Keep Required Hardware Rate-Limit History Local"
-```
-
-Read `Core Contract` plus one or two matching H2 sections. Read the full file
-only when editing, reviewing, or resolving a cross-section conflict. Apply this
-heading-first rule to long repository docs. Safe repository contracts prevail.
-
-| Trigger in the requested work | Read |
+| Question in the changed behavior | Reference |
 | --- | --- |
-| general code structure, abstraction, ownership, readability, or avoiding over-engineering in Python or C++ | `references/general-code-guidline.md` |
-| control variable names, physical quantities, pipeline stages, or public control data | `references/control-variable-naming.md` |
-| units, frames, transforms, signs, joint/motor side, quaternion layout, timestamps, or index maps | `references/control-data-conventions.md` |
-| function decomposition, helper boundaries, mutation, outputs, status handling, or Eigen lifetime | `references/control-function-implementation.md` |
-| Python API/data modeling, dataclasses, tuple/dict/string usage, module structure, Python refactoring, PEP 20, or Python readability | `references/python-code-design.md`; also read `references/general-code-guidline.md` when structural simplicity is the dominant concern |
-| YAML, `yaml-cpp`, controller gains, FSM parameters, limits, thresholds, or timeouts | `references/yaml-configuration.md` |
-| controller-to-hardware `RobotCommand` handoff, hardware validation, limiting, transmission, or required hardware-owned command smoothing | `references/hardware-command-boundary.md` |
-| device or transport I/O, packets, reads/writes, retries, reconnects, or hidden blocking | `references/hardware-io.md` |
-| `Update()`, `Step()`, high-frequency callbacks, preallocation, fallback, or command publication | `references/control-loop-implementation.md` |
-| linear algebra, geometry, manifolds, optimization, tolerances, normalization, regularization, or Eigen expressions | `references/control-numerical-implementation.md` |
-| threads, ROS callbacks, real-time/non-real-time handoff, shared state, queues, or asynchronous publication | `references/control-concurrency.md` |
-| `dt`, integrators, derivatives, filters, rate/jerk limits, timeouts, history, mode transitions, multi-rate logic, or warm starts | `references/control-discrete-time-implementation.md` |
-| code review, implementation inspection, correctness assessment, finding issues, or diff assessment | `references/review.md` plus only the concern references needed for supported findings |
-| explicit test design, test implementation, build, test run, smoke check, or validation request | `references/testing.md` |
+| Python representation or boundary trade-off | `references/python-code-design.md` |
+| Physical quantities and naming | `references/control-variable-naming.md` |
+| Units, frames, signs, ordering, timestamps | `references/control-data-conventions.md` |
+| Function contracts, mutation, Eigen lifetime | `references/control-function-implementation.md` |
+| YAML schema or parsing boundary | `references/yaml-configuration.md` |
+| Controller-to-hardware command ownership | `references/hardware-command-boundary.md` |
+| Transport, packets, bounded I/O | `references/hardware-io.md` |
+| Repeated control path or fallback | `references/control-loop-implementation.md` |
+| Geometry, solvers, numerical tolerances | `references/control-numerical-implementation.md` |
+| Shared state or asynchronous handoff | `references/control-concurrency.md` |
+| Time steps, history, filters, reset | `references/control-discrete-time-implementation.md` |
+| Requested review: evidence and severity | `references/review.md` |
+| Requested checks: selection and reuse | `references/testing.md` |
 
-## Implement Mode
+## Finish
 
-Implement the smallest clear owning diff. Keep safety, units, frames, timing,
-ownership, failures, and repeated-path bounds visible.
-
-- Start with the simplest direct implementation satisfying known requirements
-  and safety constraints.
-- Add abstraction, state, concurrency, caching, retries, reconnects, or timeouts
-  only for an explicit requirement, safety invariant, credible hazard, or
-  observed problem; use the smallest mechanism with one owner.
-- Follow local style; keep lifecycle, control flow, mathematics, mutation, and
-  side effects visible.
-- Do not turn a local change into reorganization, redesign, concurrency, or a
-  generic framework. Surface architectural pressure instead.
-- Initialize fixed storage before high-frequency paths. Preserve freshness,
-  finite-value, solver, limit, watchdog, and fallback checks.
-
-Implement includes no tests or review unless the current request explicitly
-includes those modes. Compile only the smallest target with a safe canonical
-command that cannot launch software or touch hardware. Other validation requires
-an explicit request; otherwise report it unverified.
-
-## Review, Test, And Validate Modes
-
-For review, load `references/review.md`, stay read-only during the Review pass,
-and follow repository/task policy for self-review versus independent review. If
-fixes are explicitly requested, perform them in Implement mode according to the
-same local policy.
-
-For test or validation, load `references/testing.md` and match the request.
-Prioritize functionally critical behavior and regressions. Do not create tests
-for trivial getters, constructors, wrappers, or framework boilerplate merely to
-increase test count or coverage. A smoke test should exercise a meaningful
-critical path, not just prove that a module imports or a process starts unless
-startup itself is the contract.
-
-Report only actions actually run.
-
-## Final Report
-
-Report behavior and unverified scope for implementation, findings and review
-independence for review, test protection and run status, or validation commands,
-results, and gaps.
+Report what changed, checks actually performed and their results, and any
+blocker or unverified behavior. Mention review independence only when relevant.
+Do not imply unrun checks passed. Stop when the requested outcome is complete.

@@ -1,44 +1,39 @@
-# AGENTS.md
+# Repository Instructions
 
-Keep this file focused on repository-specific working rules and links to the
-authoritative repository documents.
+Keep project-specific rules here. Replace template guidance with established
+facts and omit irrelevant sections.
 
-Read detailed sources only when relevant:
+## Context
 
-- `docs/ARCHITECTURE.md` for the navigational map of the current accepted
-  codebase, including canonical entry points, ownership, dependencies, runtime
-  flow, public boundaries, and intentional absences.
-- `docs/COMMANDS.md` when compilation, validation, environments, or
-  build/source/install/output locations matter.
+Use `docs/ARCHITECTURE.md` for current entry points, owners, dependencies, and
+runtime/scientific flow. Use `docs/COMMANDS.md` for needed compilation commands
+and build locations. If absent or stale, inspect the affected source instead.
+Read only relevant sections; no document reader or full-repository survey is
+required. Reuse established decisions rather than reopening them.
 
-If a document is absent or stale, inspect the repository instead of assuming
-its contents.
+## Scope and Cost
 
-For documents over 100 lines, inspect H2 headings and read only relevant
-sections. Read the full document when editing it or resolving cross-section
-contracts.
+Implement the requested behavior at its existing owner and preserve unrelated
+behavior. Explanation, diagnosis, design, and review are read-only unless edits
+are requested. Reuse existing APIs and calculations; avoid speculative layers
+or parallel implementations.
 
-Task authority:
+Do not add tests, a separate review pass, launches, or broad validation merely
+because implementation finished. A safe documented compile-only check is
+permitted, not required. Explicit task requirements still apply.
 
-- Explanation, diagnosis, and review are read-only unless changes are requested.
-- Implementation changes only the requested behavior and directly required files.
-- Do not add or run tests, broaden validation, or chain modes unless the user or
-  current repository workflow explicitly requests that work.
-- Architecture work proposes boundaries; it does not authorize implementation.
-- Review independence is project-specific. A repository may permit self-review
-  or require independent non-author review. Follow the current project rules and
-  do not describe self-review as independent review.
+For requested checks, use focused canonical commands. Reuse results whose code,
+inputs, configuration, and environment assumptions remain valid. Rerun only
+checks invalidated by a fix. Do not repeat FEA, optimization, training, or
+hardware work for reassurance. Hardware execution needs explicit authorization
+and a clear safety boundary.
 
-Guidelines:
+## Review and Completion
 
-- Keep this file short.
-- Put detailed repository structure under `docs/ARCHITECTURE.md`.
-- Put exact commands and environment knowledge under `docs/COMMANDS.md`.
-- Default to one agent. Delegate only bounded independent work with explicit,
-  non-overlapping write ownership; do not recursively delegate by default.
-- Delegation does not expand task authority.
-- Prefer small, reviewable diffs.
-- Preserve existing behavior unless explicitly asked to change it.
-- When build or validation is requested, use the documented locations and
-  commands from `docs/COMMANDS.md`.
-- If validation cannot be run, clearly state what was not verified.
+Default to one agent. Require independent review only when the project or task
+specifies it; do not call self-review independent or add repeated reviewer chains.
+Delegation never expands scope.
+
+Stop and report a false required assumption, missing contract, or need for a
+substantially larger redesign. Report actual checks, results, and unverified
+scope. Stop when the requested task is complete.
